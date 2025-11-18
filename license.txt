@@ -1,0 +1,46 @@
+Business Source License 1.1 (BUSL-1.1)
+
+Copyright (c) 2025 Jaws Deploy AS
+
+Licensor: Jaws Deploy AS
+Licensed Work: Code snippets contained in this repository
+Change Date: None (the Licensed Work does not become open source)
+Change License: Not applicable
+
+1. License Grant
+
+You are granted the right to use, modify, and create derivative works of the Licensed Work for any commercial or non-commercial internal purpose.
+
+2. Additional Use Grant (Critical Clause)
+
+The Licensed Work may not be used:
+
+In any product, service, library, or system distributed, licensed, sold, or otherwise provided to third parties.
+
+As part of any commercial offering, whether paid or free, including SaaS, client software, or embedded code.
+
+In any form of resale or sublicensing.
+
+This means:
+
+You may study, reference, adapt, and use the code internally.
+
+You may not embed the code or any derivative of it in software you provide to others.
+
+3. Restrictions
+
+Except as allowed above, you may not:
+
+Copy or redistribute the Licensed Work or derivatives.
+
+Remove any copyright or license notices.
+
+Use the Licensed Work for hosting or serving to third parties.
+
+4. No Warranty
+
+THE LICENSED WORK IS PROVIDED “AS IS” WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND.
+
+5. Limitation of Liability
+
+IN NO EVENT SHALL JAWS DEPLOY AS BE LIABLE FOR ANY DAMAGES OR CLAIMS ARISING FROM USE OF THE LICENSED WORK.

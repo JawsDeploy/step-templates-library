@@ -1,0 +1,239 @@
+[
+    {
+      "Id": "ServiceInformation",
+      "Name": "Service information",
+      "Description": null,
+      "ControlType": "PropertyGroup",
+      "ControlValues": null,
+      "DependsOn": null,
+      "ValueObject": null,
+      "ValueText": null,
+      "ValueNumber": 0.0,
+      "ValueBoolean": false,
+      "Properties": [
+        {
+          "Id": "ServiceName",
+          "Name": "Service name",
+          "Description": "How should the Windows Service be named (internal name)",
+          "ControlType": "SingleLineText",
+          "ControlValues": null,
+          "DependsOn": null,
+          "ValueObject": null,
+          "ValueText": null,
+          "ValueNumber": 0.0,
+          "ValueBoolean": false,
+          "Properties": []
+        },
+        {
+          "Id": "DisplayName",
+          "Name": "Display name (optional)",
+          "Description": "How should the Windows Service be named when displayed to end users. If not specified the 'Service name' will be used.",
+          "ControlType": "SingleLineText",
+          "ControlValues": null,
+          "DependsOn": null,
+          "ValueObject": null,
+          "ValueText": null,
+          "ValueNumber": 0.0,
+          "ValueBoolean": false,
+          "Properties": []
+        }
+      ]
+    },
+    {
+      "Id": "ServiceExecutable",
+      "Name": "Service executable",
+      "Description": null,
+      "ControlType": "PropertyGroup",
+      "ControlValues": null,
+      "DependsOn": null,
+      "ValueObject": null,
+      "ValueText": null,
+      "ValueNumber": 0.0,
+      "ValueBoolean": false,
+      "Properties": [
+        {
+          "Id": "InstallationDirectory",
+          "Name": "Installation directory",
+          "Description": "Path to the folder where executable is located",
+          "ControlType": "SingleLineText",
+          "ControlValues": null,
+          "DependsOn": null,
+          "ValueObject": null,
+          "ValueText": null,
+          "ValueNumber": 0.0,
+          "ValueBoolean": false,
+          "Properties": []
+        },
+        {
+          "Id": "ExecutablePath",
+          "Name": "Executable name/path",
+          "Description": "Filename or path to the service main executable file. When specifying a path - it should be relative to 'Installation directory'.",
+          "ControlType": "SingleLineText",
+          "ControlValues": null,
+          "DependsOn": null,
+          "ValueObject": null,
+          "ValueText": null,
+          "ValueNumber": 0.0,
+          "ValueBoolean": false,
+          "Properties": []
+        },
+        {
+          "Id": "ExecutableArguments",
+          "Name": "Executable arguments",
+          "Description": "The service will be started using provided set of arguments on the command line.",
+          "ControlType": "SingleLineText",
+          "ControlValues": null,
+          "DependsOn": null,
+          "ValueObject": null,
+          "ValueText": null,
+          "ValueNumber": 0.0,
+          "ValueBoolean": false,
+          "Properties": []
+        }
+      ]
+    },
+    {
+      "Id": "ServiceAccount",
+      "Name": "Service account",
+      "Description": null,
+      "ControlType": "PropertyGroup",
+      "ControlValues": null,
+      "DependsOn": null,
+      "ValueObject": null,
+      "ValueText": null,
+      "ValueNumber": 0.0,
+      "ValueBoolean": false,
+      "Properties": [
+        {
+          "Id": "AccountType",
+          "Name": "Account type",
+          "Description": "The service will run under this account type",
+          "ControlType": "DropDownList",
+          "ControlValues": [
+            {
+              "Name": "Local system",
+              "Value": "LocalSystem"
+            },
+            {
+              "Name": "Network service",
+              "Value": "NetworkService"
+            },
+            {
+              "Name": "Local service",
+              "Value": "LocalService"
+            },
+            {
+              "Name": "User account",
+              "Value": "UserAccount"
+            }
+          ],
+          "DependsOn": null,
+          "ValueObject": null,
+          "ValueText": null,
+          "ValueNumber": 0.0,
+          "ValueBoolean": false,
+          "Properties": []
+        },
+        {
+          "Id": "UserAccountName",
+          "Name": "User account name",
+          "Description": "Name of a specific Windows user account. Make sure this user has permission 'Log on as a service'.",
+          "ControlType": "SingleLineText",
+          "ControlValues": null,
+          "DependsOn": {
+            "ControlId": "ServiceAccount.AccountType",
+            "Operator": "Equals",
+            "Value": "UserAccount"
+          },
+          "ValueObject": null,
+          "ValueText": null,
+          "ValueNumber": 0.0,
+          "ValueBoolean": false,
+          "Properties": []
+        },
+        {
+          "Id": "UserAccountPassword",
+          "Name": "Password",
+          "Description": "Password for the specified Windows user account",
+          "ControlType": "SingleLineText",
+          "ControlValues": null,
+          "DependsOn": {
+            "ControlId": "ServiceAccount.AccountType",
+            "Operator": "Equals",
+            "Value": "UserAccount"
+          },
+          "ValueObject": null,
+          "ValueText": null,
+          "ValueNumber": 0.0,
+          "ValueBoolean": false,
+          "Properties": []
+        }
+      ]
+    },
+    {
+      "Id": "ServiceStartup",
+      "Name": "Service startup",
+      "Description": null,
+      "ControlType": "PropertyGroup",
+      "ControlValues": null,
+      "DependsOn": null,
+      "ValueObject": null,
+      "ValueText": null,
+      "ValueNumber": 0.0,
+      "ValueBoolean": false,
+      "Properties": [
+        {
+          "Id": "StartMode",
+          "Name": "Start mode",
+          "Description": "What should be the start mode, applied after a system reboot.",
+          "ControlType": "DropDownList",
+          "ControlValues": [
+            {
+              "Name": "Automatic",
+              "Value": "Automatic"
+            },
+            {
+              "Name": "Automatic (delayed)",
+              "Value": "AutomaticDelayedStart"
+            },
+            {
+              "Name": "Disabled",
+              "Value": "Disabled"
+            },
+            {
+              "Name": "Manual",
+              "Value": "Manual"
+            }
+          ],
+          "DependsOn": null,
+          "ValueObject": null,
+          "ValueText": null,
+          "ValueNumber": 0.0,
+          "ValueBoolean": false,
+          "Properties": []
+        },
+        {
+          "Id": "StateAfterInstallation",
+          "Name": "State after installation",
+          "Description": "What should be the initial service state after installation.",
+          "ControlType": "DropDownList",
+          "ControlValues": [
+            {
+              "Name": "Started",
+              "Value": "Started"
+            },
+            {
+              "Name": "Stopped",
+              "Value": "Stopped"
+            }
+          ],
+          "DependsOn": null,
+          "ValueObject": null,
+          "ValueText": null,
+          "ValueNumber": 0.0,
+          "ValueBoolean": false,
+          "Properties": []
+        }
+      ]
+    }
+  ]
