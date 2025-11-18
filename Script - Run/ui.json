@@ -1,0 +1,18 @@
+[
+	{
+		"Id": "ScriptBody",
+		"Name": "Script body",
+		"Description": null,
+		"ControlType": "ScriptEditor",
+		"ControlTypeOptions": {
+			"Language": "powershell"
+		},
+		"ControlValues": null,
+		"DependsOn": null,
+		"ValueObject": null,
+		"ValueText": null,
+		"ValueNumber": 0.0,
+		"ValueBoolean": false,
+		"Properties": []
+	}
+]
