@@ -1,0 +1,78 @@
+{
+  "Name": "Azure Web App",
+  "Description": "Deploys a specified package as an Azure Web App",
+  "Version": 1,
+  "SupportedRunModes": [
+    "WorkerToCloudTargets"
+  ],
+  "Properties": [
+    {
+      "Id": "PackageDetails",
+      "Name": "Package details",
+      "Description": "Specify details of the package to be deployed",
+      "ControlType": "PropertyGroup",
+      "Properties": [
+        {
+          "Id": "Package",
+          "Name": "Package",
+          "Description": "Select which package to deploy",
+          "ControlType": "PackageSelector"
+        },
+        {
+          "Id": "DeploymentSlot",
+          "Name": "Deployment slot",
+          "Description": "Optional name of the slot to which the app should be deployed",
+          "ControlType": "SingleLineText"
+        }
+      ]
+    },
+    {
+      "Id": "WebAppConfiguration",
+      "Name": "Azure Web App Configuration",
+      "Description": "Provide app configuration values supported by native Azure App Service ",
+      "ControlType": "PropertyGroup",
+      "Properties": [
+        {
+          "Id": "AzureAppSettings",
+          "Name": "Application Settings",
+          "Description": "Provide JSON with application settings. Note: this will replace/overwrite existing App Settings of the Azure Web App. E.g. { \"Setting1\": \"Value1\", \"Setting2\": \"...\" }",
+          "ControlType": "JsonEditor"
+        },
+        {
+          "Id": "AzureConnectionString",
+          "Name": "Connection strings",
+          "Description": "JSON with connection strings. Note: this will replace/overwrite existing Connection Strings of the Azure Web App. E.g. { \"ConnString1\": { \"Type\": \"MySql\", \"Value\": \"connection-string-value\" }, \"ConnString2\": { ... } }",
+          "ControlType": "JsonEditor"
+        }
+      ]
+    },
+    {
+      "Id": "Transformations",
+      "Name": "Transformations",
+      "Description": "Custom transformations of config files (XSD, JSON merging, variable replacement)",
+      "ControlType": "PropertyGroup",
+      "Properties": [
+        {
+          "Id": "ConfigTransforms",
+          "Name": "Config transforms",
+          "Description": "Newline-separated list of file transformation definitions. Globbing for transform source and target files is supported. File paths are relative to package root. Every line should have this format: [json|xml]: sourcefilePath => targetfilePath. E.g.: xml:foo\\**\\bar.*.transform => baz\\output.config",
+          "ControlType": "MultiLineText"
+        },
+        {
+          "Id": "VariableReplacement",
+          "Name": "Replace variables in files",
+          "Description": "Newline-separated list of file path for which variable transformation should be applied. This operation is performed after Config Transform. File paths are relative to the package root. Globbing is supported e.g. folder\\**\\foo.*.config",
+          "ControlType": "MultiLineText"
+        },
+        {
+          "Id": "JsonHierarchyVariableLocateAndReplace",
+          "Name": "Replace variables in JSON files located based on hierarchical variable names",
+          "Description": "Newline-separated list of JSON file paths for which nested values should be replaced with variable values based on variable names that match JSON hierarchy. This matching requires JSON nested property names to be concatenated with a colon (:). Example: to replace value of 'bar' with 234 in this JSON: { \"foo\": { \"bar\": 123 } } create a variable named 'foo:bar' and set its value to 234. This operation is performed after 'Replace variables in files'. File paths are relative to the package root. Globbing is supported e.g. folder\\**\\foo.*.config.",
+          "ControlType": "MultiLineText"
+        }
+      ]
+    }
+  ],
+  "Script": "if (!(Get-Module -ListAvailable -Name Az.Resources)) {\r\n  Install-Module -Name Az.Resources -Repository PSGallery -AllowClobber -Force -Scope CurrentUser\r\n}\r\nif (!(Get-Module -ListAvailable -Name Az.Accounts)) {\r\n  Install-Module -Name Az.Accounts -Repository PSGallery -AllowClobber -Force -Scope CurrentUser\r\n} \r\nif (!(Get-Module -ListAvailable -Name Az.Websites)) {\r\n  Install-Module -Name Az.Websites -Repository PSGallery -AllowClobber -Force -Scope CurrentUser\r\n} \r\n\r\nImport-Module Az.Accounts\r\nImport-Module Az.Resources\r\nImport-Module Az.Websites\r\nImport-Module PackageManagement -MinimumVersion 1.4\r\n\r\nWrite-Host \"Welcome to Azure Web App deploy step template!\"\r\n\r\n$packagesRoot = $Jaws.PackageFolder\r\n$workFolder = $pwd\r\n$packageId = $Jaws.Parameters[\"STEP.PackageDetails.Package.PackageId\"].Value\r\n$packageVersion = $Jaws.Packages[$packageId].PackageVersion\r\n$packageType = $Jaws.Packages[$packageId].PackageType\r\n$packageFileName = $Jaws.Packages[$packageId].FileName\r\n$packageDestination = $workFolder\r\n\r\n$AzTenantId = $Jaws.Parameters[\"CONTEXT.CloudTargetConfig\"].ValueAsMap()[\"TenantID\"].Value\r\n$AzSubscriptionId = $Jaws.Parameters[\"CONTEXT.CloudTargetConfig\"].ValueAsMap()[\"SubscriptionID\"].Value\r\n$AzApplicationId = $Jaws.Parameters[\"CONTEXT.CloudTargetConfig\"].ValueAsMap()[\"ApplicationID\"].Value\r\n$AzApplicationPassword = $Jaws.Parameters[\"CONTEXT.CloudTargetConfig\"].ValueAsMap()[\"ApplicationPassword\"].Value\r\n\r\nif ([string]::IsNullOrWhiteSpace($AzTenantId)) {\r\n  throw \"Required parameter CONTEXT.CloudTargetConfig.TenantID not specified\"\r\n}\r\nif ([string]::IsNullOrWhiteSpace($AzApplicationId)) {\r\n  throw \"Required parameter CONTEXT.CloudTargetConfig.ApplicationID not specified\"\r\n}\r\nif ([string]::IsNullOrWhiteSpace($AzApplicationPassword)) {\r\n  throw \"Required parameter CONTEXT.CloudTargetConfig.ApplicationPassword not specified\"\r\n}\r\n\r\n$AZWebAappId = $Jaws.Parameters[\"CONTEXT.CloudTargetConfig\"].ValueAsMap()[\"AzureWebAppId\"].Value #required\r\nif ([string]::IsNullOrWhiteSpace($AZWebAappId)) {\r\n  throw \"Required parameter CONTEXT.CloudTargetConfig.AzureWebAppId not specified\"\r\n}\r\n$AZWebAappSlot = $Jaws.Parameters[\"STEP.PackageDetails.DeploymentSlot\"].Value # optional\r\n$AZWebAappSlotInfo = \"\"\r\nif (![string]::IsNullOrWhiteSpace($AZWebAappSlot)) {\r\n    $AZWebAappSlotInfo = \" slot '$AZWebAappSlot'\"\r\n}\r\n\r\n# note: \"$packageId.$packageVersion\" is default NuGet Install-Package convention\r\n$packageContents = Join-Path $packageDestination \"$packageId.$packageVersion\"\r\n\r\nif (-not (Test-Path $packageContents)) {\r\n  New-Item $packageContents -ItemType Directory\r\n}\r\n\r\nSwitch ($packageType) {\r\n  \"nupkg\" {\r\n    Write-Host \"Unzipping package $packageId @ $packageVersion of type $packageType from $packagesRoot to $packageDestination using Install-Package cmdlet\"\r\n    $possibleNupkgToRemove = Join-Path $packageContents \"$packageId.$packageVersion.nupkg\"\r\n    $existed = Test-Path $possibleNupkgToRemove\r\n    Install-Package -Name $packageId -RequiredVersion $packageVersion -Source $packagesRoot -Destination $packageDestination\r\n    Write-Host \"Package $packageId @ $packageVersion installed to $packageDestination\"\r\n    if (-not $existed -and (test-path $possibleNupkgToRemove)) {\r\n      Write-Host \"Removing $possibleNupkgToRemove after nupkg installation with Install-Package\"\r\n      Remove-Item $possibleNupkgToRemove\r\n    }\r\n  }\r\n\r\n  \"zip\" {\r\n    $sourceZip = Join-Path $packagesRoot $packageFileName\r\n    Write-Host \"Unzipping package $packageId @ $packageVersion of type $packageType from $sourceZip to $packageContents using Expand-Archive cmdlet\"\r\n    Expand-Archive $sourceZip $packageContents\r\n    Write-Host \"Package $packageId @ $packageVersion unzipped to $packageContents\"\r\n  }\r\n\r\n  \"tar\" {\r\n    $sourceTar = Join-Path $packagesRoot $packageFileName\r\n    Write-Host \"Un-tar package $packageId @ $packageVersion of type $packageType from $sourceTar to $packageContents using tar.exe\"\r\n    tar xvf $sourceTar -C $packageContents\r\n    Write-Host \"Package $packageId @ $packageVersion un-tarred to $packageContents\"\r\n  }\r\n\r\n  \"tar.gz\" {\r\n    $sourceTar = Join-Path $packagesRoot $packageFileName\r\n    Write-Host \"Unzip and un-tar package $packageId @ $packageVersion of type $packageType from $sourceTar to $packageContents using tar.exe\"\r\n    tar xvfz $sourceTar -C $packageContents\r\n    Write-Host \"Package $packageId @ $packageVersion unzipped and un-tarred to $packageContents\"\r\n  }\r\n}\r\n\r\nWrite-Host \"Package files are ready for transformations at $packageContents\"\r\n\r\n\r\n\r\n# config transform\r\n$transforms = $Jaws.Parameters[\"STEP.Transformations.ConfigTransforms\"].Value\r\nif ([string]::IsNullOrWhiteSpace($transforms) -eq $false) {\r\n  Write-Host \"Executing config transformations\"\r\n  @($transforms -Split \"`n\").Trim() | ForEach-Object {\r\n    $transform = $_\r\n    if ([string]::IsNullOrWhiteSpace($transform) -eq $false) {\r\n      Write-Host \"Processing config transformation $transform\"\r\n      $idx = $transform.IndexOf(':')\r\n      if ($idx -lt 0) {\r\n        throw \"Transformation $transform is invalid\"\r\n      }\r\n      $type = $transform.Substring(0, $idx).Trim().ToLowerInvariant()\r\n      $data = $transform.Substring($idx + 1).Split(\"=>\")\r\n      $fileIn = Join-Path $packageContents $data[0].Trim()\r\n      $fileOut = Join-Path $packageContents $data[1].Trim()\r\n      switch ($type) {\r\n        \"xml\" {\r\n          Convert-JawsXmlTransform -xml $fileOut -xdt $fileIn\r\n        }\r\n        \"json\" {\r\n          Convert-JawsJsonTransform -json $fileOut -jsonTransform $fileIn\r\n        }\r\n        Default {\r\n          throw \"Transformation $type is not supported\"\r\n        }\r\n      }\r\n    }\r\n  }\r\n}\r\nelse {\r\n  Write-Host \"No config transformations defined\"\r\n}\r\n\r\n\r\n\r\n# variable replacement\r\n$files = $Jaws.Parameters[\"STEP.Transformations.VariableReplacement\"].Value\r\nif ([string]::IsNullOrWhiteSpace($files) -eq $false) {\r\n  Write-Host \"Variable replacement - starting\"\r\n  @($files -Split \"`n\").Trim() | ForEach-Object {\r\n    if ([string]::IsNullOrWhiteSpace($_) -eq $false) {\r\n      Write-Host \"Variable replacement - processing $_\"\r\n      $absoluteFilePath = Join-Path $packageContents $_\r\n      Convert-JawsVariableReplace -sourcePath $absoluteFilePath -variables $Jaws.Parameters\r\n      Write-Host \"Variable replacement - done $_\"\r\n    }    \r\n  }\r\n}\r\nelse {\r\n  Write-Host \"No files for variable replacement defined\"\r\n}\r\n\r\n# hierarchical variable replacement\r\n$files = $Jaws.Parameters[\"STEP.Transformations.JsonHierarchyVariableLocateAndReplace\"].Value\r\nif ([string]::IsNullOrWhiteSpace($files) -eq $false) {\r\n  Write-Host \"JSON hierarchical variable replacement - starting\"\r\n  @($files -Split \"`n\").Trim() | ForEach-Object {\r\n    if ([string]::IsNullOrWhiteSpace($_) -eq $false) {\r\n      Write-Host \"JSON hierarchical variable replacement - processing $_\"\r\n      $absoluteFilePath = Join-Path $packageContents $_\r\n      Convert-JawsJsonHierarchicalVariableReplace -sourcePath $absoluteFilePath -variables $Jaws.Parameters\r\n      Write-Host \"JSON hierarchical variable replacement - done $_\"\r\n    }\r\n  }\r\n}\r\nelse {\r\n  Write-Host \"No files for variable replacement defined\"\r\n}\r\n\r\nWrite-Host \"Preparing for Azure deployment\"\r\n\r\n$packageContentsWildcard = Join-Path $packageContents \"*\"\r\n$rezippedPackage = Join-Path $packageDestination \"$packageId.$packageVersion.zip\"\r\nWrite-Host \"Re-zipping binaries into $rezippedPackage\"\r\nCompress-Archive -Path $packageContentsWildcard -DestinationPath $rezippedPackage -Force\r\n\r\nWrite-Host \"Logging in to Azure Account\"\r\n\r\nSet-JawsAzLogin -TenantId $AzTenantId -ApplicationId $AzApplicationId -Password $AzApplicationPassword -SubscriptionId $AzSubscriptionId\r\n\r\nWrite-Host \"Preparing for Azure deployment\"\r\n\r\n$AZWebAppInstance = Get-AzResource -ResourceId $AZWebAappId\r\nif (!$AZWebAppInstance) {\r\n  Write-Error \"Azure Web App $AZWebAappId not found\"\r\n  exit 1\r\n}\r\n\r\n$AZWebAppResourceGroup = $AZWebAppInstance.ResourceGroupName\r\n$AZWebAppName = $AZWebAppInstance.Name\r\n\r\nWrite-Host \"Deploying files to Azure Web App '$AZWebAppName'$AZWebAappSlotInfo\"\r\n\r\n$publishParameters = @{\r\n  ResourceGroupName = $AZWebAppResourceGroup\r\n  Name = $AZWebAppName\r\n  ArchivePath = $rezippedPackage\r\n}\r\n\r\nif ($AZWebAappSlot) {\r\n    $publishParameters.Slot = $AZWebAappSlot\r\n}\r\nPublish-AzWebApp @publishParameters -Force\r\n\r\nWrite-Host \"Files deployed\"\r\n\r\n$AZAppSettings = $Jaws.Parameters[\"STEP.WebAppConfiguration.AzureAppSettings\"].Value\r\n$AZConnectionStrings = $Jaws.Parameters[\"STEP.WebAppConfiguration.AzureConnectionString\"].Value\r\n\r\n$moreSettings = @{}\r\n\r\ntry {\r\n    if ($AZAppSettings) {\r\n        $AZAppSettingsConverted = @{}\r\n        foreach ($prop in (ConvertFrom-Json $AZAppSettings).PSObject.Properties) {\r\n            $AZAppSettingsConverted[$prop.Name] = $prop.Value\r\n        }\r\n        $moreSettings.Add(\"AppSettings\", $AZAppSettingsConverted)\r\n        Write-Host \"Updating $($AZAppSettingsConverted.Count) app settings\"\r\n    }\r\n} catch {\r\n    Write-Error \"Invalid app settings JSON.\"\r\n    exit 1\r\n}\r\n\r\ntry {\r\n    if ($AZConnectionStrings) {\r\n        $AZConnectionStringsConverted = @{}\r\n        foreach ($prop in (ConvertFrom-Json $AZConnectionStrings).PSObject.Properties) {\r\n          $AZConnectionStringsConverted[$prop.Name] = @{\r\n            Type = $prop.Value.Type\r\n            Value = $prop.Value.Value\r\n          }\r\n        }\r\n        $moreSettings.Add(\"ConnectionStrings\", $AZConnectionStringsConverted)\r\n        Write-Host \"Updating $($AZConnectionStringsConverted.Count) connections strings\"\r\n    }\r\n} catch {\r\n    Write-Error \"Invalid connection strings JSON.\"\r\n    exit 1\r\n}\r\n\r\nif ($moreSettings.Count -gt 0) {\r\n    $moreSettings.Add(\"ResourceGroupName\", $AZWebAppResourceGroup)\r\n    $moreSettings.Add(\"Name\", $AZWebAppName)\r\n    if ($AZWebAappSlot) {\r\n        $moreSettings.Add(\"Slot\", $AZWebAappSlot)\r\n        Set-AzWebAppSlot @moreSettings\r\n    } else {\r\n        Set-AzWebApp @moreSettings\r\n    }\r\n    Write-Host \"Application configured\"\r\n}\r\n\r\nWrite-Host \"Azure Web App deployment complete\"\r\n\r\nRemove-JawsAzLogin\r\n\r\nWrite-Host \"Logged off from Azure\"",
+  "ScriptLanguage": "powershell"
+}

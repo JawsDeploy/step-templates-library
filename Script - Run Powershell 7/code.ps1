@@ -1,1 +1,0 @@
-#SCRIPTREFERENCE(STEP.ScriptBody)

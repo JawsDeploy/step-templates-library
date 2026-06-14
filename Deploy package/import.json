@@ -1,0 +1,108 @@
+{
+  "Name": "Deploy package",
+  "Description": "Deploy package from a nuget feed to target machine, run config transforms and replace variables in config files.",
+  "Version": 1,
+  "SupportedRunModes": [
+    "TargetMachine"
+  ],
+  "Properties": [
+    {
+      "Id": "PackageDetails",
+      "Name": "Package details",
+      "Description": "Specify details of the package to be deployed",
+      "ControlType": "PropertyGroup",
+      "Properties": [
+        {
+          "Id": "Package",
+          "Name": "Package",
+          "Description": "Select which package to deploy",
+          "ControlType": "PackageSelector"
+        },
+        {
+          "Id": "InstallationDirectory",
+          "Name": "Installation directory",
+          "Description": "Where should the package be deployed",
+          "ControlType": "SingleLineText"
+        },
+        {
+          "Id": "PurgeInstallationDirectory",
+          "Name": "Purge installation directory before deployment",
+          "Description": "If enabled the specified installation directory will be purged before files are copied. Otherwise directory is not modified and matching files will be overwritten",
+          "ControlType": "Checkbox"
+        }
+      ]
+    },
+    {
+      "Id": "Transformations",
+      "Name": "Transformations",
+      "Description": "Custom transformations to config files (XSD, JSON merging, variable replacement)",
+      "ControlType": "PropertyGroup",
+      "Properties": [
+        {
+          "Id": "ConfigTransforms",
+          "Name": "Config transforms",
+          "Description": "Newline-separated list of file transformation definitions. Globbing for transform source and target files is supported. File paths are relative to package root. Every line should have this format: [json|xml]: sourcefilePath => targetfilePath. E.g.: xml:foo\\**\\bar.*.transform => baz\\output.config",
+          "ControlType": "MultiLineText"
+        },
+        {
+          "Id": "VariableReplacement",
+          "Name": "Replace variables in files",
+          "Description": "Newline-separated list of file path for which variable transformation should be applied. This operation is performed after Config Transform. File paths are relative to the package root. Globbing is supported e.g. folder\\**\\foo.*.config",
+          "ControlType": "MultiLineText"
+        },
+        {
+          "Id": "JsonHierarchyVariableLocateAndReplace",
+          "Name": "Replace variables in JSON files located based on hierarchical variable names",
+          "Description": "Newline-separated list of JSON file paths for which nested values should be replaced with variable values based on variable names that match JSON hierarchy. This matching requires JSON nested property names to be concatenated with a colon (:). Example: to replace value of 'bar' with 234 in this JSON: { \"foo\": { \"bar\": 123 } } create a variable named 'foo:bar' and set its value to 234. This operation is performed after 'Replace variables in files'. File paths are relative to the package root. Globbing is supported e.g. folder\\**\\foo.*.config.",
+          "ControlType": "MultiLineText"
+        }
+      ]
+    },
+    {
+      "Id": "CustomScripts",
+      "Name": "Custom scripts",
+      "Description": "Custom deployment scripts to be executed at various stages of the deployment process",
+      "ControlType": "PropertyGroup",
+      "Properties": [
+        {
+          "Id": "AfterPackageExtracted",
+          "Name": "After package is extracted",
+          "DefaultValue": "# write some code here...",
+          "ControlType": "ScriptEditor",
+          "ControlTypeOptions": {
+            "Language": "powershell"
+          }
+        },
+        {
+          "Id": "AfterConfigTransformed",
+          "Name": "After config transform is applied",
+          "DefaultValue": "# write some code here...",
+          "ControlType": "ScriptEditor",
+          "ControlTypeOptions": {
+            "Language": "powershell"
+          }
+        },
+        {
+          "Id": "AfterVariablesReplaced",
+          "Name": "After variables are replaced in files",
+          "DefaultValue": "# write some code here...",
+          "ControlType": "ScriptEditor",
+          "ControlTypeOptions": {
+            "Language": "powershell"
+          }
+        },
+        {
+          "Id": "AfterPackageDeployed",
+          "Name": "After package is deployed",
+          "DefaultValue": "# write some code here...",
+          "ControlType": "ScriptEditor",
+          "ControlTypeOptions": {
+            "Language": "powershell"
+          }
+        }
+      ]
+    }
+  ],
+  "Script": "Import-Module PackageManagement -MinimumVersion 1.4\n\nWrite-Host \"Welcome to deploy package step template!\"\n\n$packagesRoot = $Jaws.PackageFolder\n$workFolder = $pwd\n$packageId = $Jaws.Parameters[\"STEP.PackageDetails.Package.PackageId\"].Value\n$packageVersion = $Jaws.Packages[$packageId].PackageVersion\n$packageType = $Jaws.Packages[$packageId].PackageType\n$packageFileName = $Jaws.Packages[$packageId].FileName\n$packageDestination = $workFolder\n\n# note: \"$packageId.$packageVersion\" is default NuGet Install-Package convention\n$packageContents = Join-Path $packageDestination \"$packageId.$packageVersion\"\n\nif (-not (Test-Path $packageContents)) {\n  New-Item $packageContents -ItemType Directory\n}\n\nSwitch ($packageType) {\n  \"nupkg\" {\n    Write-Host \"Unzipping package $packageId @ $packageVersion of type $packageType from $packagesRoot to $packageDestination using Install-Package cmdlet\"\n    $possibleNupkgToRemove = Join-Path $packageContents \"$packageId.$packageVersion.nupkg\"\n    $existed = Test-Path $possibleNupkgToRemove\n    Install-Package -Name $packageId -RequiredVersion $packageVersion -Source $packagesRoot -Destination $packageDestination\n    Write-Host \"Package $packageId @ $packageVersion installed to $packageDestination\"\n    if (-not $existed -and (test-path $possibleNupkgToRemove)) {\n      Write-Host \"Removing $possibleNupkgToRemove after nupkg installation with Install-Package\"\n      Remove-Item $possibleNupkgToRemove\n    }\n  }\n\n  \"zip\" {\n    $sourceZip = Join-Path $packagesRoot $packageFileName\n    Write-Host \"Unzipping package $packageId @ $packageVersion of type $packageType from $sourceZip to $packageContents using Expand-Archive cmdlet\"\n    Expand-Archive $sourceZip $packageContents\n    Write-Host \"Package $packageId @ $packageVersion unzipped to $packageContents\"\n  }\n\n  \"tar\" {\n    $sourceTar = Join-Path $packagesRoot $packageFileName\n    Write-Host \"Un-tar package $packageId @ $packageVersion of type $packageType from $sourceTar to $packageContents using tar.exe\"\n    tar xvf $sourceTar -C $packageContents\n    Write-Host \"Package $packageId @ $packageVersion un-tarred to $packageContents\"\n  }\n\n  \"tar.gz\" {\n    $sourceTar = Join-Path $packagesRoot $packageFileName\n    Write-Host \"Unzip and un-tar package $packageId @ $packageVersion of type $packageType from $sourceTar to $packageContents using tar.exe\"\n    tar xvfz $sourceTar -C $packageContents\n    Write-Host \"Package $packageId @ $packageVersion unzipped and un-tarred to $packageContents\"\n  }\n}\n\nWrite-Host \"Package files are ready for transformations at $packageContents\"\n\n\n#SCRIPTREFERENCE(STEP.CustomScripts.AfterPackageExtracted)\n\n\n# config transform\n$transforms = $Jaws.Parameters[\"STEP.Transformations.ConfigTransforms\"].Value\nif ([string]::IsNullOrWhiteSpace($transforms) -eq $false) {\n  Write-Host \"Executing config transformations\"\n  @($transforms -Split \"`n\").Trim() | ForEach-Object {\n    $transform = $_\n    if ([string]::IsNullOrWhiteSpace($transform) -eq $false) {\n      Write-Host \"Processing config transformation $transform\"\n      $idx = $transform.IndexOf(':')\n      if ($idx -lt 0) {\n        throw \"Transformation $transform is invalid\"\n      }\n      $type = $transform.Substring(0, $idx).Trim().ToLowerInvariant()\n      $data = $transform.Substring($idx + 1).Split(\"=>\")\n      $fileIn = Join-Path $packageContents $data[0].Trim()\n      $fileOut = Join-Path $packageContents $data[1].Trim()\n      switch ($type) {\n        \"xml\" {\n          Convert-JawsXmlTransform -xml $fileOut -xdt $fileIn\n        }\n        \"json\" {\n          Convert-JawsJsonTransform -json $fileOut -jsonTransform $fileIn\n        }\n        Default {\n          throw \"Transformation $type is not supported\"\n        }\n      }\n    }\n  }\n}\nelse {\n  Write-Host \"No config transformations defined\"\n}\n\n\n#SCRIPTREFERENCE(STEP.CustomScripts.AfterConfigTransformed)\n\n\n# variable replacement\n$files = $Jaws.Parameters[\"STEP.Transformations.VariableReplacement\"].Value\nif ([string]::IsNullOrWhiteSpace($files) -eq $false) {\n  Write-Host \"Variable replacement - starting\"\n  @($files -Split \"`n\").Trim() | ForEach-Object {\n    if ([string]::IsNullOrWhiteSpace($_) -eq $false) {\n      Write-Host \"Variable replacement - processing $_\"\n      $absoluteFilePath = Join-Path $packageContents $_\n      Convert-JawsVariableReplace -sourcePath $absoluteFilePath -variables $Jaws.Parameters\n      Write-Host \"Variable replacement - done $_\"\n    }    \n  }\n}\nelse {\n  Write-Host \"No files for variable replacement defined\"\n}\n\n# hierarchical variable replacement\n$files = $Jaws.Parameters[\"STEP.Transformations.JsonHierarchyVariableLocateAndReplace\"].Value\nif ([string]::IsNullOrWhiteSpace($files) -eq $false) {\n  Write-Host \"JSON hierarchical variable replacement - starting\"\n  @($files -Split \"`n\").Trim() | ForEach-Object {\n    if ([string]::IsNullOrWhiteSpace($_) -eq $false) {\n      Write-Host \"JSON hierarchical variable replacement - processing $_\"\n      $absoluteFilePath = Join-Path $packageContents $_\n      Convert-JawsJsonHierarchicalVariableReplace -sourcePath $absoluteFilePath -variables $Jaws.Parameters\n      Write-Host \"JSON hierarchical variable replacement - done $_\"\n    }\n  }\n}\nelse {\n  Write-Host \"No files for variable replacement defined\"\n}\n\n\n#SCRIPTREFERENCE(STEP.CustomScripts.AfterVariablesReplaced)\n\n\n# deploy to final location\nWrite-Host \"Deploying files to installation directory\"\n\n$installDir = $Jaws.Parameters[\"STEP.PackageDetails.InstallationDirectory\"].Value\n\nif (-not $installDir) {\n  throw \"This deployment step is missing value for 'STEP.PackageDetails.InstallationDirectory'\"\n}\n\nif (-not (Test-Path $installDir)) {\n  Write-Host \"Install directory is missing - creating $installDir\"\n  New-Item $installDir -ItemType Directory\n  Write-Host \"Install directory created - ready to copy files\"\n} else {\n  Write-Host \"Install directory exists - checking purge setting\"\n  if ($Jaws.Parameters[\"STEP.PackageDetails.PurgeInstallationDirectory\"].Value -eq $true) {\n    Write-Host \"Purge flag enabled - purging $installDir\"\n    Remove-JawsFolderContents -folder $installDir -ignoreErrors $false\n    Write-Host \"$installDir purged - ready to copy files\"\n  } else {\n    Write-Host \"Purge flag disabled - ready to copy files\"\r\n  }\n}\n$packageContentsWildcard = Join-Path $packageContents \"*\"\nWrite-Host \"Copying files $packageContentsWildcard to $installDir\"\nMove-Item -Force -Path $packageContentsWildcard -Destination $installDir\nWrite-Host \"All files copied\"\n\n\n#SCRIPTREFERENCE(STEP.CustomScripts.AfterPackageDeployed)",
+  "ScriptLanguage": "powershell"
+}

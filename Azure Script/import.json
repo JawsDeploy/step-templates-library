@@ -1,0 +1,31 @@
+{
+  "Name": "Azure Script",
+  "Description": "Run any PowerShell script while being logged into Azure Context with the pre-selected Azure Account.",
+  "Version": 1,
+  "SupportedRunModes": [
+    "TargetMachine"
+  ],
+  "Properties": [
+    {
+      "Id": "AzureAccount",
+      "Name": "Azure account details",
+      "Description": "Select an Azure Account that will be set in the PowerShell context before running custom script.",
+      "ControlType": "CloudAccountSelector",
+      "ControlTypeOptions": {
+        "CloudType": "Azure"
+      }
+    },
+    {
+      "Id": "ScriptBody",
+      "Name": "Script body",
+      "Description": "Specify your PowerShell script to be executed in the context of selected Azure Account.",
+      "DefaultValue": "",
+      "ControlType": "ScriptEditor",
+      "ControlTypeOptions": {
+        "Language": "powershell"
+      }
+    }
+  ],
+  "Script": "Write-Host \"Welcome to Azure Script step\"\r\n\r\nif (!(Get-Module -ListAvailable -Name Az.Accounts)) {\r\n  Install-Module -Name Az.Accounts -Repository PSGallery -AllowClobber -Force -Scope CurrentUser\r\n} \r\n\r\nImport-Module Az.Accounts\r\n\r\nWrite-Host \"Logging in to Azure Account\"\r\n\r\n$aza = $Jaws.Parameters[\"STEP.AzureAccount\"].ValueAsMap()\r\n\r\n$AzTenantId = $aza[\"TenantID\"].Value\r\n$AzSubscriptionId = $aza[\"SubscriptionID\"].Value\r\n$AzApplicationId = $aza[\"ApplicationID\"].Value\r\n$AzApplicationPassword = $aza[\"ApplicationPassword\"].Value\r\n\r\nif ([string]::IsNullOrWhiteSpace($AzTenantId)) {\r\n  throw \"Required parameter STEP.AzureAccount.TenantID not specified\"\r\n}\r\nif ([string]::IsNullOrWhiteSpace($AzApplicationId)) {\r\n  throw \"Required parameter STEP.AzureAccount.ApplicationID not specified\"\r\n}\r\nif ([string]::IsNullOrWhiteSpace($AzApplicationPassword)) {\r\n  throw \"Required parameter STEP.AzureAccount.ApplicationPassword not specified\"\r\n}\r\n\r\nSet-JawsAzLogin -TenantId $AzTenantId -ApplicationId $AzApplicationId -Password $AzApplicationPassword -SubscriptionId $AzSubscriptionId\r\n\r\n#SCRIPTREFERENCE(STEP.ScriptBody)\r\n\r\nWrite-Host \"Azure Script step complete\"\r\n\r\nRemove-JawsAzLogin\r\nWrite-Host \"Logged off from Azure\"",
+  "ScriptLanguage": "powershell"
+}

@@ -1,0 +1,21 @@
+{
+  "Name": "Run PS5 script",
+  "Description": "Run a PowerShell 5 (AKA Windows Powershell) script. Handy for IIS management.",
+  "Version": 1,
+  "SupportedRunModes": [
+    "TargetMachine"
+  ],
+  "Properties": [
+    {
+      "Id": "ScriptBody",
+      "Name": "Script body",
+      "DefaultValue": "",
+      "ControlType": "ScriptEditor",
+      "ControlTypeOptions": {
+        "Language": "powershell5"
+      }
+    }
+  ],
+  "Script": "#SCRIPTREFERENCE(STEP.ScriptBody)",
+  "ScriptLanguage": "powershell5"
+}

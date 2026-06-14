@@ -1,0 +1,21 @@
+{
+  "Name": "Run Python script",
+  "Description": "Run a Python 3 script. The agent provisions Python automatically according to your workspace runtime policy. Use 'import jaws' to access parameters and set output values.",
+  "Version": 1,
+  "SupportedRunModes": [
+    "TargetMachine"
+  ],
+  "Properties": [
+    {
+      "Id": "ScriptBody",
+      "Name": "Script body",
+      "DefaultValue": "",
+      "ControlType": "ScriptEditor",
+      "ControlTypeOptions": {
+        "Language": "python"
+      }
+    }
+  ],
+  "Script": "#SCRIPTREFERENCE(STEP.ScriptBody)",
+  "ScriptLanguage": "python"
+}

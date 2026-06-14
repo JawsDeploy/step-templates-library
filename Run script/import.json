@@ -1,6 +1,7 @@
 {
-  "Name": "Run PS5 script",
-  "Description": "Run a powershell 5 script",
+  "Name": "Run script",
+  "Description": "Run a powershell script",
+  "Version": 1,
   "SupportedRunModes": [
     "TargetMachine"
   ],
@@ -8,15 +9,13 @@
     {
       "Id": "ScriptBody",
       "Name": "Script body",
+      "DefaultValue": "",
       "ControlType": "ScriptEditor",
       "ControlTypeOptions": {
-        "Language": "powershell5"
-      },
-      "ValueNumber": 0.0,
-      "ValueBoolean": false,
-      "Properties": []
+        "Language": "powershell"
+      }
     }
   ],
   "Script": "#SCRIPTREFERENCE(STEP.ScriptBody)",
-  "ScriptLanguage": "powershell5"
+  "ScriptLanguage": "powershell"
 }

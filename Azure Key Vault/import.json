@@ -1,0 +1,78 @@
+{
+  "Name": "Azure Key Vault",
+  "Description": "Get secrets from Azure Key Vault and store them in output variables",
+  "Version": 1,
+  "SupportedRunModes": [
+    "TargetMachine"
+  ],
+  "Properties": [
+    {
+      "Id": "AzureAccount",
+      "Name": "Azure account details",
+      "Description": "Provide details to authenticate with Azure Key Vault",
+      "ControlType": "PropertyGroup",
+      "Properties": [
+        {
+          "Id": "TenantID",
+          "Name": "Tenant ID",
+          "ControlType": "SingleLineText"
+        },
+        {
+          "Id": "SubscriptionID",
+          "Name": "Subscription ID",
+          "ControlType": "SingleLineText"
+        },
+        {
+          "Id": "ApplicationID",
+          "Name": "Application ID",
+          "ControlType": "SingleLineText"
+        },
+        {
+          "Id": "ApplicationPassword",
+          "Name": "Application Password / Key",
+          "ControlType": "SecureString"
+        },
+        {
+          "Id": "VaultName",
+          "Name": "Vault name",
+          "ControlType": "SingleLineText"
+        }
+      ]
+    },
+    {
+      "Id": "AzureCustomSetup",
+      "Name": "Azure custom setup",
+      "Description": "Customize loading of Azure modules",
+      "ControlType": "PropertyGroup",
+      "Properties": [
+        {
+          "Id": "CustomModuleVersion",
+          "Name": "Custom Azure module version",
+          "Description": "Optionally: specify custom version of module Az.KeyVault to be used. If not specified the system default will be imported.",
+          "ControlType": "SingleLineText"
+        },
+        {
+          "Id": "CustomModuleLocation",
+          "Name": "Custom Azure module location",
+          "Description": "Optionally: specify custom path on the file system where Az.KeyVault module is located. If not specified the default locations will be searched.",
+          "ControlType": "SingleLineText"
+        }
+      ]
+    },
+    {
+      "Id": "Secrets",
+      "Name": "Secrets",
+      "ControlType": "PropertyGroup",
+      "Properties": [
+        {
+          "Id": "SecretsList",
+          "Name": "Secrets to get",
+          "Description": "New-line-separated list of secrets. Optionally provide secret version and output variable name. If output variable name is not specified - it will be constructed as {VaultName.SecretName}. If secret version is not specified - latest version will be fetched. Line syntax: secretName [secretVersion] [| outputVariableName]",
+          "ControlType": "MultiLineText"
+        }
+      ]
+    }
+  ],
+  "Script": "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12\r\n$ErrorActionPreference = 'Stop'\r\n\r\nWrite-Host \"AzureKeyVault secrets import starting\"\r\n\r\nWrite-Host \"Logging in to Azure Account\"\r\n$AzTenantId = $Jaws.Parameters[\"STEP.AzureAccount.TenantID\"].Value\r\n$AzSubscriptionId = $Jaws.Parameters[\"STEP.AzureAccount.SubscriptionID\"].Value\r\n$AzApplicationId = $Jaws.Parameters[\"STEP.AzureAccount.ApplicationID\"].Value\r\n$AzApplicationPassword = $Jaws.Parameters[\"STEP.AzureAccount.ApplicationPassword\"].Value\r\n\r\nif ([string]::IsNullOrWhiteSpace($AzTenantId)) {\r\n  throw \"Required parameter AzureAccount.TenantID not specified\"\r\n}\r\nif ([string]::IsNullOrWhiteSpace($AzApplicationId)) {\r\n  throw \"Required parameter AzureAccount.ApplicationID not specified\"\r\n}\r\nif ([string]::IsNullOrWhiteSpace($AzApplicationPassword)) {\r\n  throw \"Required parameter AzureAccount.ApplicationPassword not specified\"\r\n}\r\n\r\nSet-JawsAzLogin -TenantId $AzTenantId -ApplicationId $AzApplicationId -Password $AzApplicationPassword -SubscriptionId $AzSubscriptionId\r\n\r\n# Variables\r\n$AzVaultModuleName = \"Az.KeyVault\"\r\n$AzureKeyVaultName = $Jaws.Parameters[\"STEP.AzureAccount.VaultName\"].Value\r\n\r\n$VaultSecretNames = $Jaws.Parameters[\"STEP.Secrets.SecretsList\"].Value\r\n$PrintVariableNames = $Jaws.Parameters[\"STEP.Secrets.PrintOutVariableNames\"].Value\r\n\r\n$AzVaultModuleSpecificVersion = $Jaws.Parameters[\"STEP.AzureCustomSetup.CustomModuleVersion\"].Value\r\n$AzVaultModuleCustomInstallLocation = $Jaws.Parameters[\"STEP.AzureCustomSetup.CustomModuleLocation\"].Value\r\n\r\n# Validation\r\nif ([string]::IsNullOrWhiteSpace($AzureKeyVaultName)) {\r\n  throw \"Required parameter AzureAccount.VaultName not specified\"\r\n}\r\nif ([string]::IsNullOrWhiteSpace($VaultSecretNames)) {\r\n  throw \"Required parameter Secrets.SecretsList not specified\"\r\n}\r\n\r\n# Cross-platform bits\r\n$WindowsPowerShell = $True\r\nif ($PSEdition -eq \"Core\") {\r\n  $WindowsPowerShell = $False\r\n}\r\n\r\nfunction Get-Module-CrossPlatform {\r\n  [CmdletBinding()]\r\n  Param(\r\n    [Parameter(Mandatory = $true, Position = 0)]\r\n    [string] $Name\r\n  )\r\n  \r\n  $module = Get-Module -Name $Name -ListAvailable\r\n  if ($WindowsPowerShell -eq $True -and $null -eq $module) {\r\n    $module = Get-InstalledModule -Name $Name\r\n  }\r\n  \r\n  return $module\r\n}\r\n\r\n$PowerShellModuleName = $AzVaultModuleName\r\n\r\n# Check for Custom install location\r\nif ([string]::IsNullOrWhiteSpace($AzVaultModuleCustomInstallLocation) -eq $false) {\r\n  if ((Test-Path $AzVaultModuleCustomInstallLocation -IsValid) -eq $false) {\r\n    throw \"The path specified at AzureCustomSetup.CustomModuleLocation is not valid, please use a relative or absolute path.\"\r\n  }\r\n  \r\n  $AzVaultModulesFolder = [System.IO.Path]::GetFullPath($AzVaultModuleCustomInstallLocation)\r\n  $LocalModules = (New-Item \"$AzVaultModulesFolder\" -ItemType Directory -Force).FullName\r\n  $env:PSModulePath = $LocalModules + [System.IO.Path]::PathSeparator + $env:PSModulePath\r\n  \r\n  # Check to see if the module exists\r\n  $LocalModulePath = \"$LocalModules/$AzVaultModuleName\"\r\n  if ((Test-Path -Path $LocalModulePath) -eq $true) {\r\n    # Use specific location\r\n    $PowerShellModuleName = $LocalModulePath\r\n  }\r\n}\r\n\r\n# Import module\r\nif ([string]::IsNullOrWhiteSpace($AzVaultModuleSpecificVersion) -eq $true) {\r\n  Write-Host \"Importing module $PowerShellModuleName ...\"\r\n  Import-Module -Name $PowerShellModuleName\r\n}\r\nelse {\r\n  Write-Host \"Importing module $PowerShellModuleName at required version $AzVaultModuleSpecificVersion ...\"\r\n  Import-Module -Name $PowerShellModuleName -RequiredVersion $AzVaultModuleSpecificVersion\r\n}\r\n\r\n# Check if Az.KeyVault module is imported correctly in current session\r\n$azVaultModule = Get-Module-CrossPlatform -Name $AzVaultModuleName\r\nif ($null -eq $azVaultModule) {\r\n  throw \"Cannot find the '$AzVaultModuleName' module on the machine.\"\r\n}\r\n\r\n$Secrets = @()\r\n$VariablesCreated = 0\r\n$StepName = $Jaws.CurrentStep.StepName\r\n\r\n# Extract secret names+versions \r\n@($VaultSecretNames.Split(\"`n\").Trim()) | ForEach-Object {\r\n  if ([string]::IsNullOrWhiteSpace($_) -eq $false) {\r\n    Write-Verbose \"Working on: '$_'\"\r\n    $secretDefinition = $_.Split('|')\r\n    $secretName = $secretDefinition[0].Trim()\r\n    $secretNameAndVersion = $secretName.Split(\" \")\r\n    $secretVersion = $null\r\n    if ($secretNameAndVersion.Count -gt 1) {\r\n      $secretName = $secretNameAndVersion[0].Trim()\r\n      $secretVersion = $secretNameAndVersion[1].Trim()\r\n    }\r\n    if ([string]::IsNullOrWhiteSpace($secretName) -eq $true) {\r\n      throw \"Unable to establish secret name from: '$($_)'\"\r\n    }\r\n    $secret = [PsCustomObject]@{\r\n      Name          = $secretName\r\n      SecretVersion = $secretVersion\r\n      VariableName  = if (![string]::IsNullOrWhiteSpace($secretDefinition[1])) { $secretDefinition[1].Trim() } else { \"\" }\r\n    }\r\n    $Secrets += $secret\r\n  }\r\n}\r\n\r\nWrite-Host \"Vault Name: $AzureKeyVaultName\"\r\nWrite-Host \"Print variables: $PrintVariableNames\"\r\nWrite-Host \"Secrets to retrieve: $($Secrets.Count)\"\r\nWrite-Host \"$AzVaultModuleName module version specified: $AzVaultModuleSpecificVersion\"\r\nWrite-Host \"$AzVaultModuleName module custom installation directory: $AzVaultModuleCustomInstallLocation\"\r\n\r\n# Retrieve Secrets\r\nforeach ($secret in $secrets) {\r\n  $name = $secret.Name\r\n  $secretVersion = $secret.SecretVersion\r\n  $variableName = $secret.VariableName\r\n  if ([string]::IsNullOrWhiteSpace($variableName)) {\r\n    $variableName = \"$($AzureKeyVaultName.Trim()).$($name.Trim())\"\r\n  }\r\n  \r\n  # Call to Azure!\r\n    \r\n  if ([string]::IsNullOrWhiteSpace($secretVersion)) {\r\n    Write-Host \"Fetching $name$ver from $AzureKeyVaultName\"\r\n    $azSecretValue = Get-AzKeyVaultSecret -VaultName $AzureKeyVaultName -Name $name -AsPlainText\r\n  }\r\n  else {\r\n    Write-Host \"Fetching $name @ $secretVersion from $AzureKeyVaultName\"\r\n    $azSecretValue = Get-AzKeyVaultSecret -VaultName $AzureKeyVaultName -Name $name -Version $secretVersion -AsPlainText\r\n  }\r\n\r\n  if ([string]::IsNullOrWhiteSpace($azSecretValue)) {\r\n    $ver = $secretVersion ? \" @ $secretVersion\" : \"\"\r\n    Write-Warning \"Secret $name$ver not found in $AzureKeyVaultName - no output variable will be produced\"\r\n  } else {\r\n    Set-JawsOutputValue -Name $variableName -Value $azSecretValue -Type Secret\r\n    $VariablesCreated += 1\r\n  }\r\n}\r\n\r\nWrite-Host \"Created $variablesCreated output variables\"\r\nWrite-Host \"AzureKeyVault secrets import complete\"\r\n\r\nRemove-JawsAzLogin\r\nWrite-Host \"Logged off from Azure\"",
+  "ScriptLanguage": "powershell"
+}
