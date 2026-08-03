@@ -1,0 +1,61 @@
+{
+  "Name": "Install SSL certificate into Windows certificate store",
+  "Version": 1,
+  "SupportedRunModes": [
+    "TargetMachine"
+  ],
+  "Properties": [
+    {
+      "Id": "CertificateValue",
+      "Name": "Certificate value",
+      "Description": "Base-64 encoded PFX certificate contents, usually provided by a secret variable or previous step output.",
+      "ControlType": "SecureString",
+      "IsBound": false,
+      "ValueNumber": 0.0,
+      "ValueBoolean": false,
+      "Properties": []
+    },
+    {
+      "Id": "CertificatePassword",
+      "Name": "Certificate password",
+      "Description": "Password protecting the PFX. Leave empty for an unprotected certificate.",
+      "ControlType": "SecureString",
+      "IsBound": false,
+      "ValueNumber": 0.0,
+      "ValueBoolean": false,
+      "Properties": []
+    },
+    {
+      "Id": "CertificateStoreLocation",
+      "Name": "Certificate store location",
+      "Description": "Certificate store location: LocalMachine or CurrentUser.",
+      "ControlType": "SingleLineText",
+      "IsBound": false,
+      "ValueNumber": 0.0,
+      "ValueBoolean": false,
+      "Properties": []
+    },
+    {
+      "Id": "CertificateStoreName",
+      "Name": "Certificate store name",
+      "Description": "Name of the certificate store within the selected location, for example My.",
+      "ControlType": "SingleLineText",
+      "IsBound": false,
+      "ValueNumber": 0.0,
+      "ValueBoolean": false,
+      "Properties": []
+    },
+    {
+      "Id": "CertificateFriendlyName",
+      "Name": "Certificate friendly name",
+      "Description": "Optional friendly name assigned to the imported certificate.",
+      "ControlType": "SingleLineText",
+      "IsBound": false,
+      "ValueNumber": 0.0,
+      "ValueBoolean": false,
+      "Properties": []
+    }
+  ],
+  "Script": "Write-Output \"Installing certificate...\"\n\n$certificateValue = [string]$Jaws.Parameters[\"STEP.CertificateValue\"].Value\n$certificatePassword = [string]$Jaws.Parameters[\"STEP.CertificatePassword\"].Value\n$storeLocationValue = [string]$Jaws.Parameters[\"STEP.CertificateStoreLocation\"].Value\n$storeName = [string]$Jaws.Parameters[\"STEP.CertificateStoreName\"].Value\n$friendlyName = [string]$Jaws.Parameters[\"STEP.CertificateFriendlyName\"].Value\n\nif ([string]::IsNullOrWhiteSpace($certificateValue)) {\n  throw \"Certificate value is required.\"\n}\n\nif ([string]::IsNullOrWhiteSpace($storeLocationValue)) {\n  throw \"Certificate store location is required.\"\n}\n\nif ([string]::IsNullOrWhiteSpace($storeName)) {\n  throw \"Certificate store name is required.\"\n}\n\ntry {\n  $storeLocation = [System.Enum]::Parse(\n    [System.Security.Cryptography.X509Certificates.StoreLocation],\n    $storeLocationValue,\n    $true\n  )\n}\ncatch {\n  throw \"Invalid certificate store location '$storeLocationValue'. Use CurrentUser or LocalMachine.\"\n}\n\n$keyStorageFlags = [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::PersistKeySet\n\nif ($storeLocation -eq [System.Security.Cryptography.X509Certificates.StoreLocation]::LocalMachine) {\n  $keyStorageFlags = $keyStorageFlags -bor [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::MachineKeySet\n}\nelse {\n  $keyStorageFlags = $keyStorageFlags -bor [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::UserKeySet\n}\n\n$certificate = $null\n$store = $null\n\ntry {\n  $certificateBytes = [System.Convert]::FromBase64String($certificateValue)\n  $certificate = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new(\n    $certificateBytes,\n    $certificatePassword,\n    $keyStorageFlags\n  )\n\n  $store = [System.Security.Cryptography.X509Certificates.X509Store]::new(\n    $storeName,\n    $storeLocation\n  )\n  $store.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite)\n\n  $existing = $store.Certificates.Find(\n    [System.Security.Cryptography.X509Certificates.X509FindType]::FindByThumbprint,\n    $certificate.Thumbprint,\n    $false\n  )\n\n  if ($existing.Count -gt 0) {\n    Write-Output \"Certificate already exists. Skipping.\"\n  }\n  else {\n    if (-not [string]::IsNullOrWhiteSpace($friendlyName)) {\n      $certificate.FriendlyName = $friendlyName\n    }\n\n    $store.Add($certificate)\n\n    $verified = $store.Certificates.Find(\n      [System.Security.Cryptography.X509Certificates.X509FindType]::FindByThumbprint,\n      $certificate.Thumbprint,\n      $false\n    )\n\n    if ($verified.Count -eq 0) {\n      throw \"Certificate could not be verified after import.\"\n    }\n\n    Write-Output \"Certificate imported successfully.\"\n  }\n}\ncatch [System.FormatException] {\n  throw \"Certificate value is not valid Base-64 data.\"\n}\nfinally {\n  if ($null -ne $store) {\n    $store.Dispose()\n  }\n\n  if ($null -ne $certificate) {\n    $certificate.Dispose()\n  }\n}",
+  "ScriptLanguage": "powershell"
+}

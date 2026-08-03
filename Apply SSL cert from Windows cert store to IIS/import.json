@@ -1,0 +1,103 @@
+{
+  "Name": "Apply SSL cert from Windows cert store to IIS",
+  "Version": 1,
+  "SupportedRunModes": [
+    "TargetMachine"
+  ],
+  "Properties": [
+    {
+      "Id": "CertificateLookupMode",
+      "Name": "Certificate lookup mode",
+      "Description": "Select how the certificate is located.",
+      "ControlType": "DropDownList",
+      "ControlValues": [
+        {
+          "Name": "Thumbprint",
+          "Value": "Thumbprint"
+        },
+        {
+          "Name": "Common name (CN)",
+          "Value": "CommonName"
+        }
+      ],
+      "IsBound": false,
+      "ValueText": "Thumbprint",
+      "ValueNumber": 0.0,
+      "ValueBoolean": false,
+      "Properties": []
+    },
+    {
+      "Id": "CertificateStoreName",
+      "Name": "Certificate store name",
+      "Description": "Machine certificate store containing the certificate, for example My or WebHosting.",
+      "ControlType": "SingleLineText",
+      "IsBound": false,
+      "ValueText": "My",
+      "ValueNumber": 0.0,
+      "ValueBoolean": false,
+      "Properties": []
+    },
+    {
+      "Id": "CertificateThumbprint",
+      "Name": "Certificate thumbprint",
+      "Description": "Exact certificate thumbprint, usually bound to an earlier step output.",
+      "ControlType": "SingleLineText",
+      "DependsOn": {
+        "ControlId": "CertificateLookupMode",
+        "Operator": "Equals",
+        "Value": "Thumbprint"
+      },
+      "IsBound": false,
+      "ValueNumber": 0.0,
+      "ValueBoolean": false,
+      "Properties": []
+    },
+    {
+      "Id": "CertificateCN",
+      "Name": "Certificate common name",
+      "Description": "Common name used to select the newest valid matching certificate.",
+      "ControlType": "SingleLineText",
+      "DependsOn": {
+        "ControlId": "CertificateLookupMode",
+        "Operator": "Equals",
+        "Value": "CommonName"
+      },
+      "IsBound": false,
+      "ValueNumber": 0.0,
+      "ValueBoolean": false,
+      "Properties": []
+    },
+    {
+      "Id": "WebsiteName",
+      "Name": "Website name",
+      "Description": "Name of the existing IIS website.",
+      "ControlType": "SingleLineText",
+      "IsBound": false,
+      "ValueNumber": 0.0,
+      "ValueBoolean": false,
+      "Properties": []
+    },
+    {
+      "Id": "BindingHostName",
+      "Name": "Binding host name",
+      "Description": "DNS host name for the HTTPS binding, for example www.example.com.",
+      "ControlType": "SingleLineText",
+      "IsBound": false,
+      "ValueNumber": 0.0,
+      "ValueBoolean": false,
+      "Properties": []
+    },
+    {
+      "Id": "RequireSni",
+      "Name": "Require SNI",
+      "Description": "Enable Server Name Indication. When disabled, IIS selects the certificate by IP and port.",
+      "ControlType": "Checkbox",
+      "IsBound": false,
+      "ValueNumber": 0.0,
+      "ValueBoolean": true,
+      "Properties": []
+    }
+  ],
+  "Script": "Write-Output \"Configuring IIS HTTPS binding...\"\r\n\r\n$lookupMode = ([string]$Jaws.Parameters[\"STEP.CertificateLookupMode\"].Value).Trim()\r\n$storeName = ([string]$Jaws.Parameters[\"STEP.CertificateStoreName\"].Value).Trim()\r\n$siteName = ([string]$Jaws.Parameters[\"STEP.WebsiteName\"].Value).Trim()\r\n$hostName = ([string]$Jaws.Parameters[\"STEP.BindingHostName\"].Value).Trim()\r\n$requireSni = [System.Convert]::ToBoolean(\r\n  $Jaws.Parameters[\"STEP.RequireSni\"].Value\r\n)\r\n\r\nif ([string]::IsNullOrWhiteSpace($storeName)) {\r\n  throw \"Certificate store name is required.\"\r\n}\r\n\r\nif ([string]::IsNullOrWhiteSpace($siteName)) {\r\n  throw \"Website name is required.\"\r\n}\r\n\r\nif ([string]::IsNullOrWhiteSpace($hostName)) {\r\n  throw \"Binding host name is required.\"\r\n}\r\n\r\n$administrationAssembly =\r\n  Join-Path $env:windir \"System32\\inetsrv\\Microsoft.Web.Administration.dll\"\r\n\r\nif (-not (Test-Path -LiteralPath $administrationAssembly)) {\r\n  throw \"Microsoft.Web.Administration.dll was not found. Verify that IIS is installed.\"\r\n}\r\n\r\nif ($null -eq (\"Microsoft.Web.Administration.ServerManager\" -as [type])) {\r\n  Add-Type -Path $administrationAssembly\r\n}\r\n\r\n$certificateStore = $null\r\n$certificate = $null\r\n$serverManager = $null\r\n\r\ntry {\r\n  $certificateStore =\r\n    [System.Security.Cryptography.X509Certificates.X509Store]::new(\r\n      $storeName,\r\n      [System.Security.Cryptography.X509Certificates.StoreLocation]::LocalMachine\r\n    )\r\n\r\n  $openFlags =\r\n    [System.Security.Cryptography.X509Certificates.OpenFlags]::ReadOnly -bor\r\n    [System.Security.Cryptography.X509Certificates.OpenFlags]::OpenExistingOnly\r\n\r\n  try {\r\n    $certificateStore.Open($openFlags)\r\n  }\r\n  catch {\r\n    throw \"Could not open certificate store 'LocalMachine\\$storeName': $($_.Exception.Message)\"\r\n  }\r\n\r\n  switch ($lookupMode) {\r\n    \"Thumbprint\" {\r\n      $thumbprint = (\r\n        ([string]$Jaws.Parameters[\"STEP.CertificateThumbprint\"].Value) `\r\n          -replace \"[^0-9A-Fa-f]\", \"\"\r\n      ).ToUpperInvariant()\r\n\r\n      if ($thumbprint -notmatch \"^[0-9A-F]{40}$\") {\r\n        throw \"Certificate thumbprint must contain exactly 40 hexadecimal characters.\"\r\n      }\r\n\r\n      $matches = $certificateStore.Certificates.Find(\r\n        [System.Security.Cryptography.X509Certificates.X509FindType]::FindByThumbprint,\r\n        $thumbprint,\r\n        $false\r\n      )\r\n\r\n      if ($matches.Count -eq 0) {\r\n        throw \"Certificate '$thumbprint' was not found in LocalMachine\\$storeName.\"\r\n      }\r\n\r\n      $certificate = $matches[0]\r\n    }\r\n\r\n    \"CommonName\" {\r\n      $certificateCN =\r\n        ([string]$Jaws.Parameters[\"STEP.CertificateCN\"].Value).Trim()\r\n\r\n      if ([string]::IsNullOrWhiteSpace($certificateCN)) {\r\n        throw \"Certificate common name is required.\"\r\n      }\r\n\r\n      $escapedCN =\r\n        [System.Text.RegularExpressions.Regex]::Escape($certificateCN)\r\n\r\n      $cnPattern = \"(?:^|,\\s*)CN\\s*=\\s*$escapedCN(?:\\s*,|$)\"\r\n      $now = Get-Date\r\n\r\n      $certificate = $certificateStore.Certificates |\r\n        Where-Object {\r\n          $_.Subject -match $cnPattern -and\r\n          $_.NotBefore -le $now -and\r\n          $_.NotAfter -gt $now -and\r\n          $_.HasPrivateKey\r\n        } |\r\n        Sort-Object -Property NotAfter -Descending |\r\n        Select-Object -First 1\r\n\r\n      if ($null -eq $certificate) {\r\n        throw \"No valid certificate with common name '$certificateCN' and an accessible private key was found in LocalMachine\\$storeName.\"\r\n      }\r\n    }\r\n\r\n    default {\r\n      throw \"Certificate lookup mode must be Thumbprint or CommonName.\"\r\n    }\r\n  }\r\n\r\n  if (-not $certificate.HasPrivateKey) {\r\n    throw \"Certificate '$($certificate.Thumbprint)' does not have an accessible private key.\"\r\n  }\r\n\r\n  $thumbprint = $certificate.Thumbprint.ToUpperInvariant()\r\n  Write-Output \"Using certificate thumbprint '$thumbprint' from LocalMachine\\$storeName.\"\r\n\r\n  $bindingInformation = \"*:443:$hostName\"\r\n  $sniFlag = [Microsoft.Web.Administration.SslFlags]::Sni\r\n\r\n  $initialSslFlags = if ($requireSni) {\r\n    $sniFlag\r\n  }\r\n  else {\r\n    [Microsoft.Web.Administration.SslFlags]::None\r\n  }\r\n\r\n  $serverManager = [Microsoft.Web.Administration.ServerManager]::new()\r\n  $site = $serverManager.Sites[$siteName]\r\n\r\n  if ($null -eq $site) {\r\n    throw \"IIS website '$siteName' was not found.\"\r\n  }\r\n\r\n  $binding = $site.Bindings |\r\n    Where-Object {\r\n      $_.Protocol -eq \"https\" -and\r\n      $_.BindingInformation -eq $bindingInformation\r\n    } |\r\n    Select-Object -First 1\r\n\r\n  $changed = $false\r\n\r\n  if ($null -eq $binding) {\r\n    $binding = $site.Bindings.Add(\r\n      $bindingInformation,\r\n      $certificate.GetCertHash(),\r\n      $storeName,\r\n      $initialSslFlags\r\n    )\r\n\r\n    $changed = $true\r\n    Write-Output \"Added HTTPS binding '$bindingInformation'.\"\r\n  }\r\n  else {\r\n    $currentThumbprint = if ($null -ne $binding.CertificateHash) {\r\n      [System.Convert]::ToHexString($binding.CertificateHash)\r\n    }\r\n    else {\r\n      \"\"\r\n    }\r\n\r\n    if ($currentThumbprint -ne $thumbprint) {\r\n      $binding.CertificateHash = $certificate.GetCertHash()\r\n      $changed = $true\r\n    }\r\n\r\n    if ($binding.CertificateStoreName -ne $storeName) {\r\n      $binding.CertificateStoreName = $storeName\r\n      $changed = $true\r\n    }\r\n\r\n    $currentSslFlags = [int]$binding.SslFlags\r\n\r\n    $desiredSslFlags = if ($requireSni) {\r\n      $currentSslFlags -bor [int]$sniFlag\r\n    }\r\n    else {\r\n      $currentSslFlags -band (-bnot [int]$sniFlag)\r\n    }\r\n\r\n    if ($desiredSslFlags -ne $currentSslFlags) {\r\n      $binding.SslFlags =\r\n        [Microsoft.Web.Administration.SslFlags]$desiredSslFlags\r\n\r\n      $changed = $true\r\n    }\r\n\r\n    if ($changed) {\r\n      Write-Output \"Updated HTTPS binding '$bindingInformation'.\"\r\n    }\r\n    else {\r\n      Write-Output \"HTTPS binding '$bindingInformation' is already configured.\"\r\n    }\r\n  }\r\n\r\n  if ($changed) {\r\n    $serverManager.CommitChanges()\r\n  }\r\n\r\n  Write-Output \"SNI required: $requireSni\"\r\n}\r\nfinally {\r\n  if ($null -ne $serverManager) {\r\n    $serverManager.Dispose()\r\n  }\r\n\r\n  if ($null -ne $certificate) {\r\n    $certificate.Dispose()\r\n  }\r\n\r\n  if ($null -ne $certificateStore) {\r\n    $certificateStore.Dispose()\r\n  }\r\n}",
+  "ScriptLanguage": "powershell"
+}
