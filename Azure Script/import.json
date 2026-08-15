@@ -1,7 +1,6 @@
 {
   "Name": "Azure Script",
   "Description": "Run any PowerShell script while being logged into Azure Context with the pre-selected Azure Account.",
-  "Version": 1,
   "SupportedRunModes": [
     "TargetMachine"
   ],

@@ -1,7 +1,6 @@
 {
   "Name": "Deploy package",
   "Description": "Deploy package from a nuget feed to target machine, run config transforms and replace variables in config files.",
-  "Version": 1,
   "SupportedRunModes": [
     "TargetMachine"
   ],

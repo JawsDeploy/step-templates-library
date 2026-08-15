@@ -1,6 +1,5 @@
 {
   "Name": "Install SSL certificate into Windows certificate store",
-  "Version": 1,
   "SupportedRunModes": [
     "TargetMachine"
   ],

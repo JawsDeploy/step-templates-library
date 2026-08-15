@@ -1,7 +1,6 @@
 {
   "Name": "Run script",
   "Description": "Run a powershell script",
-  "Version": 1,
   "SupportedRunModes": [
     "TargetMachine"
   ],

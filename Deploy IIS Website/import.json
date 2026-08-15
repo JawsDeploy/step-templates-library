@@ -1,0 +1,327 @@
+{
+  "Name": "Deploy IIS website",
+  "Description": "Create or update an IIS website and its application pool on the target machine. The website content must already be on disk - place this step after a 'Deploy package' step that installs files into the physical path.",
+  "SupportedRunModes": [
+    "TargetMachine"
+  ],
+  "Properties": [
+    {
+      "Id": "Website",
+      "Name": "Website",
+      "Description": "Identity and content location of the IIS website",
+      "ControlType": "PropertyGroup",
+      "IsBound": false,
+      "ValueNumber": 0.0,
+      "ValueBoolean": false,
+      "Properties": [
+        {
+          "Id": "WebSiteName",
+          "Name": "Website name",
+          "Description": "Name of the IIS website. It is created when missing and updated when it already exists.",
+          "ControlType": "SingleLineText",
+          "IsBound": false,
+          "ValueNumber": 0.0,
+          "ValueBoolean": false,
+          "Properties": []
+        },
+        {
+          "Id": "PhysicalPath",
+          "Name": "Physical path",
+          "Description": "Folder on the target machine that holds the website content. Normally the 'Installation directory' of a preceding 'Deploy package' step. The folder is created when missing.",
+          "ControlType": "SingleLineText",
+          "IsBound": false,
+          "ValueNumber": 0.0,
+          "ValueBoolean": false,
+          "Properties": []
+        },
+        {
+          "Id": "Bindings",
+          "Name": "Bindings",
+          "Description": "Newline-separated list of bindings, one per line, in the format: protocol ip:port:hostname [certificate-thumbprint] [sni]. Use * for any IP and leave the hostname empty to match any host. HTTPS bindings require the thumbprint of a certificate already present in the LocalMachine\\My store of the target machine; add the sni keyword to enable Server Name Indication (which also requires a hostname). Examples: 'http *:80:' or 'https *:443:app.example.com 1a2b3c4d5e6f sni'.",
+          "ControlType": "MultiLineText",
+          "IsBound": false,
+          "ValueNumber": 0.0,
+          "ValueBoolean": false,
+          "Properties": []
+        },
+        {
+          "Id": "RemoveOtherBindings",
+          "Name": "Remove bindings that are not listed above",
+          "Description": "If enabled, any binding on the website that is not listed above is removed. Otherwise existing bindings are left in place and the listed ones are added.",
+          "ControlType": "Checkbox",
+          "IsBound": false,
+          "ValueNumber": 0.0,
+          "ValueBoolean": false,
+          "Properties": []
+        }
+      ]
+    },
+    {
+      "Id": "ApplicationPool",
+      "Name": "Application pool",
+      "Description": "Application pool the website runs in",
+      "ControlType": "PropertyGroup",
+      "IsBound": false,
+      "ValueNumber": 0.0,
+      "ValueBoolean": false,
+      "Properties": [
+        {
+          "Id": "ApplicationPoolName",
+          "Name": "Application pool name",
+          "Description": "Name of the application pool. It is created when missing and updated when it already exists.",
+          "ControlType": "SingleLineText",
+          "IsBound": false,
+          "ValueNumber": 0.0,
+          "ValueBoolean": false,
+          "Properties": []
+        },
+        {
+          "Id": "FrameworkVersion",
+          "Name": ".NET CLR version",
+          "Description": "Managed runtime version of the application pool. Choose 'No managed code' for ASP.NET Core applications that are hosted out-of-process.",
+          "ControlType": "DropDownList",
+          "ControlValues": [
+            {
+              "Name": ".NET CLR v4.0",
+              "Value": "v4.0"
+            },
+            {
+              "Name": ".NET CLR v2.0",
+              "Value": "v2.0"
+            },
+            {
+              "Name": "No managed code (.NET Core / static)",
+              "Value": "NoManagedCode"
+            }
+          ],
+          "IsBound": false,
+          "ValueNumber": 0.0,
+          "ValueBoolean": false,
+          "Properties": []
+        },
+        {
+          "Id": "PipelineMode",
+          "Name": "Managed pipeline mode",
+          "Description": "Managed pipeline mode of the application pool.",
+          "ControlType": "DropDownList",
+          "ControlValues": [
+            {
+              "Name": "Integrated",
+              "Value": "Integrated"
+            },
+            {
+              "Name": "Classic",
+              "Value": "Classic"
+            }
+          ],
+          "IsBound": false,
+          "ValueNumber": 0.0,
+          "ValueBoolean": false,
+          "Properties": []
+        },
+        {
+          "Id": "Enable32BitAppOnWin64",
+          "Name": "Enable 32-bit applications",
+          "Description": "If enabled the application pool runs 32-bit worker processes on a 64-bit system.",
+          "ControlType": "Checkbox",
+          "IsBound": false,
+          "ValueNumber": 0.0,
+          "ValueBoolean": false,
+          "Properties": []
+        },
+        {
+          "Id": "IdentityType",
+          "Name": "Identity",
+          "Description": "The account the application pool worker process runs as.",
+          "ControlType": "DropDownList",
+          "ControlValues": [
+            {
+              "Name": "Application pool identity",
+              "Value": "ApplicationPoolIdentity"
+            },
+            {
+              "Name": "Local system",
+              "Value": "LocalSystem"
+            },
+            {
+              "Name": "Local service",
+              "Value": "LocalService"
+            },
+            {
+              "Name": "Network service",
+              "Value": "NetworkService"
+            },
+            {
+              "Name": "User account",
+              "Value": "SpecificUser"
+            }
+          ],
+          "IsBound": false,
+          "ValueNumber": 0.0,
+          "ValueBoolean": false,
+          "Properties": []
+        },
+        {
+          "Id": "UserAccountName",
+          "Name": "User account name",
+          "Description": "Name of a specific Windows user account, e.g. DOMAIN\\user or .\\user. Make sure this account can read the physical path.",
+          "ControlType": "SingleLineText",
+          "DependsOn": {
+            "ControlId": "ApplicationPool.IdentityType",
+            "Operator": "Equals",
+            "Value": "SpecificUser"
+          },
+          "IsBound": false,
+          "ValueNumber": 0.0,
+          "ValueBoolean": false,
+          "Properties": []
+        },
+        {
+          "Id": "UserAccountPassword",
+          "Name": "Password",
+          "Description": "Password for the specified Windows user account.",
+          "ControlType": "SecureString",
+          "DependsOn": {
+            "ControlId": "ApplicationPool.IdentityType",
+            "Operator": "Equals",
+            "Value": "SpecificUser"
+          },
+          "IsBound": false,
+          "ValueNumber": 0.0,
+          "ValueBoolean": false,
+          "Properties": []
+        }
+      ]
+    },
+    {
+      "Id": "Authentication",
+      "Name": "Authentication",
+      "Description": "IIS authentication modes for the website. Leave entries unchanged to keep whatever is already configured on the machine.",
+      "ControlType": "PropertyGroup",
+      "IsBound": false,
+      "ValueNumber": 0.0,
+      "ValueBoolean": false,
+      "Properties": [
+        {
+          "Id": "AnonymousAuthentication",
+          "Name": "Anonymous authentication",
+          "Description": "Anonymous authentication.",
+          "ControlType": "DropDownList",
+          "ControlValues": [
+            {
+              "Name": "Leave unchanged",
+              "Value": "Unchanged"
+            },
+            {
+              "Name": "Enabled",
+              "Value": "Enabled"
+            },
+            {
+              "Name": "Disabled",
+              "Value": "Disabled"
+            }
+          ],
+          "IsBound": false,
+          "ValueNumber": 0.0,
+          "ValueBoolean": false,
+          "Properties": []
+        },
+        {
+          "Id": "WindowsAuthentication",
+          "Name": "Windows authentication",
+          "Description": "Windows authentication. The IIS 'Windows Authentication' role feature must be installed on the target machine.",
+          "ControlType": "DropDownList",
+          "ControlValues": [
+            {
+              "Name": "Leave unchanged",
+              "Value": "Unchanged"
+            },
+            {
+              "Name": "Enabled",
+              "Value": "Enabled"
+            },
+            {
+              "Name": "Disabled",
+              "Value": "Disabled"
+            }
+          ],
+          "IsBound": false,
+          "ValueNumber": 0.0,
+          "ValueBoolean": false,
+          "Properties": []
+        },
+        {
+          "Id": "BasicAuthentication",
+          "Name": "Basic authentication",
+          "Description": "Basic authentication. The IIS 'Basic Authentication' role feature must be installed on the target machine.",
+          "ControlType": "DropDownList",
+          "ControlValues": [
+            {
+              "Name": "Leave unchanged",
+              "Value": "Unchanged"
+            },
+            {
+              "Name": "Enabled",
+              "Value": "Enabled"
+            },
+            {
+              "Name": "Disabled",
+              "Value": "Disabled"
+            }
+          ],
+          "IsBound": false,
+          "ValueNumber": 0.0,
+          "ValueBoolean": false,
+          "Properties": []
+        }
+      ]
+    },
+    {
+      "Id": "Options",
+      "Name": "Options",
+      "Description": "Behaviour of the step itself",
+      "ControlType": "PropertyGroup",
+      "IsBound": false,
+      "ValueNumber": 0.0,
+      "ValueBoolean": false,
+      "Properties": [
+        {
+          "Id": "StateAfterDeployment",
+          "Name": "State after deployment",
+          "Description": "State of the application pool and website once the step has finished.",
+          "ControlType": "DropDownList",
+          "ControlValues": [
+            {
+              "Name": "Started",
+              "Value": "Started"
+            },
+            {
+              "Name": "Stopped",
+              "Value": "Stopped"
+            },
+            {
+              "Name": "Leave unchanged",
+              "Value": "Unchanged"
+            }
+          ],
+          "IsBound": false,
+          "ValueNumber": 0.0,
+          "ValueBoolean": false,
+          "Properties": []
+        },
+        {
+          "Id": "MaxRetries",
+          "Name": "Retry attempts",
+          "Description": "How many times each IIS operation is retried before the step fails. IIS configuration writes fail intermittently when another process holds applicationHost.config. Leave empty for the default of 5.",
+          "ControlType": "Number",
+          "IsBound": false,
+          "ValueNumber": 0.0,
+          "ValueBoolean": false,
+          "Properties": []
+        }
+      ]
+    }
+  ],
+  "Script": "# Deploy IIS website\n#\n# Creates or updates an IIS application pool and website on the target machine.\n# The website content is expected to already be on disk - chain this step after a\n# \"Deploy package\" step that installs files into the physical path.\n#\n# This template runs under Windows PowerShell (powershell5) because WebAdministration\n# is a Windows-only module that is not loadable in PowerShell 7 without a compatibility session.\n\nfunction Get-JawsText ($name, $default = \"\") {\n  $param = $Jaws.Parameters[$name]\n  if ($null -eq $param) { return $default }\n\n  $value = $param.Value\n  if ($null -eq $value) { return $default }\n  if (($value -is [string]) -and [string]::IsNullOrWhiteSpace($value)) { return $default }\n\n  return \"$value\".Trim()\n}\n\nfunction Get-JawsBool ($name, $default = $false) {\n  $param = $Jaws.Parameters[$name]\n  if ($null -eq $param) { return $default }\n\n  $value = $param.Value\n  if ($null -eq $value) { return $default }\n  if ($value -is [bool]) { return $value }\n\n  # A checkbox bound to a variable arrives as text - coerce it here.\n  $text = \"$value\".Trim()\n  if ([string]::IsNullOrWhiteSpace($text)) { return $default }\n\n  return @(\"true\", \"1\", \"yes\", \"on\") -contains $text.ToLowerInvariant()\n}\n\nfunction Get-JawsInt ($name, $default) {\n  $text = Get-JawsText $name \"\"\n  if ([string]::IsNullOrWhiteSpace($text)) { return $default }\n\n  $parsed = 0\n  if (-not [int]::TryParse($text, [ref]$parsed)) { return $default }\n  if ($parsed -le 0) { return $default }\n\n  return $parsed\n}\n\nfunction Invoke-IisWithRetry ($description, [scriptblock]$action) {\n  for ($attempt = 1; $attempt -le $script:maxRetries; $attempt++) {\n    try {\n      return & $action\n    }\n    catch {\n      if ($attempt -ge $script:maxRetries) {\n        throw \"Failed to $description after $script:maxRetries attempt(s): $($_.Exception.Message)\"\n      }\n\n      $delay = Get-Random -Minimum 1 -Maximum 5\n      Write-Host \"Attempt $attempt to $description failed ($($_.Exception.Message)) - retrying in $delay second(s)\"\n      Start-Sleep -Seconds $delay\n    }\n  }\n}\n\n# Parses a single binding line: \"protocol ip:port:hostname [certificate-thumbprint] [sni]\"\nfunction ConvertTo-IisBinding ($line) {\n  $parts = @($line -split '\\s+' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })\n  if ($parts.Count -lt 2) {\n    throw \"Binding '$line' is invalid. Expected format: protocol ip:port:hostname [certificate-thumbprint] [sni]\"\n  }\n\n  $protocol = $parts[0].TrimEnd(':', '/').ToLowerInvariant()\n  if (@(\"http\", \"https\") -notcontains $protocol) {\n    throw \"Binding '$line' uses unsupported protocol '$protocol'. Only http and https are supported.\"\n  }\n\n  $addressParts = $parts[1] -split ':'\n  if ($addressParts.Count -lt 2) {\n    throw \"Binding '$line' is invalid. The address must be in the format ip:port:hostname, e.g. *:80:\"\n  }\n\n  $ipAddress = $addressParts[0].Trim()\n  if ([string]::IsNullOrWhiteSpace($ipAddress)) { $ipAddress = \"*\" }\n\n  $port = 0\n  if (-not [int]::TryParse($addressParts[1].Trim(), [ref]$port)) {\n    throw \"Binding '$line' has a non-numeric port '$($addressParts[1])'\"\n  }\n\n  $hostHeader = \"\"\n  if ($addressParts.Count -ge 3) { $hostHeader = $addressParts[2].Trim() }\n\n  $thumbprint = \"\"\n  $sni = $false\n  for ($i = 2; $i -lt $parts.Count; $i++) {\n    if ($parts[$i].ToLowerInvariant() -eq \"sni\") {\n      $sni = $true\n    }\n    else {\n      # Tolerate thumbprints copied from certmgr, which contain spaces and invisible characters.\n      $thumbprint += ($parts[$i] -replace '[^0-9a-fA-F]', '')\n    }\n  }\n\n  if ($protocol -eq \"https\" -and [string]::IsNullOrWhiteSpace($thumbprint)) {\n    throw \"Binding '$line' is https but has no certificate thumbprint. Add the thumbprint of a certificate installed in the LocalMachine\\My store of this machine.\"\n  }\n\n  if ($protocol -eq \"http\" -and -not [string]::IsNullOrWhiteSpace($thumbprint)) {\n    throw \"Binding '$line' is http but specifies a certificate thumbprint. Use https for certificate bindings.\"\n  }\n\n  if ($sni -and [string]::IsNullOrWhiteSpace($hostHeader)) {\n    throw \"Binding '$line' enables sni but has no hostname. Server Name Indication requires a hostname.\"\n  }\n\n  return [pscustomobject]@{\n    Protocol           = $protocol\n    IPAddress          = $ipAddress\n    Port               = $port\n    HostHeader         = $hostHeader\n    Thumbprint         = $thumbprint.ToUpperInvariant()\n    Sni                = $sni\n    BindingInformation = \"$($ipAddress):$($port):$hostHeader\"\n  }\n}\n\nfunction Assert-IisAvailable {\n  # IIS configuration is only readable from an elevated process. Checking up front turns an\n  # obscure \"Process should have elevated status\" failure into an actionable message.\n  $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent()\n  $isElevated = (New-Object System.Security.Principal.WindowsPrincipal($identity)).IsInRole(\n    [System.Security.Principal.WindowsBuiltInRole]::Administrator)\n\n  if (-not $isElevated) {\n    throw \"IIS configuration cannot be read or modified because this deployment is not running elevated (current account: $($identity.Name)). Run the Jaws agent on this machine as a service under an account with local administrator rights.\"\n  }\n\n  try {\n    Import-Module WebAdministration -ErrorAction Stop\n  }\n  catch {\n    throw \"IIS is not available on this machine - the WebAdministration PowerShell module could not be loaded ($($_.Exception.Message)). Install the IIS management tools before running this step, e.g. 'Install-WindowsFeature Web-Server, Web-Mgmt-Console, Web-Scripting-Tools' on Windows Server, or 'Enable-WindowsOptionalFeature -Online -FeatureName IIS-WebServerRole, IIS-ManagementScriptingTools' on Windows client.\"\n  }\n\n  if (-not (Test-Path \"IIS:\\\")) {\n    throw \"IIS is not available on this machine - the IIS: drive could not be found even though WebAdministration loaded. Check that the World Wide Web Publishing Service (W3SVC) is installed.\"\n  }\n\n  Write-Host \"IIS is available - WebAdministration module loaded\"\n}\n\nfunction Set-IisApplicationPool ($poolName, $frameworkVersion, $pipelineMode, $enable32Bit, $identityType, $username, $password) {\n  $poolPath = \"IIS:\\AppPools\\$poolName\"\n\n  if (-not (Test-Path $poolPath)) {\n    Write-Host \"Creating application pool: $poolName\"\n    Invoke-IisWithRetry \"create application pool '$poolName'\" { New-Item $poolPath -Type AppPool | Out-Null }\n  }\n  else {\n    Write-Host \"Application pool already exists - updating: $poolName\"\n  }\n\n  # \"No managed code\" is expressed as an empty managedRuntimeVersion in IIS.\n  $runtimeVersion = if ($frameworkVersion -eq \"NoManagedCode\") { \"\" } else { $frameworkVersion }\n  # managedPipelineMode is an enum: 0 = Integrated, 1 = Classic.\n  $pipelineValue = if ($pipelineMode -eq \"Classic\") { 1 } else { 0 }\n\n  Invoke-IisWithRetry \"set application pool properties on '$poolName'\" {\n    Set-ItemProperty $poolPath -Name \"managedRuntimeVersion\" -Value $runtimeVersion\n    Set-ItemProperty $poolPath -Name \"managedPipelineMode\" -Value $pipelineValue\n    Set-ItemProperty $poolPath -Name \"enable32BitAppOnWin64\" -Value $enable32Bit\n    Set-ItemProperty $poolPath -Name \"autoStart\" -Value $true\n  }\n\n  Write-Host \"Application pool runtime: $(if ($runtimeVersion) { $runtimeVersion } else { 'No managed code' }), pipeline: $(if ($pipelineValue -eq 1) { 'Classic' } else { 'Integrated' }), 32-bit: $enable32Bit\"\n\n  if ($identityType -eq \"SpecificUser\") {\n    if ([string]::IsNullOrWhiteSpace($username)) {\n      throw \"Application pool identity is set to 'User account' but no user account name was provided.\"\n    }\n\n    Write-Host \"Setting application pool identity to user account: $username\"\n    Invoke-IisWithRetry \"set application pool identity on '$poolName'\" {\n      Set-ItemProperty $poolPath -Name \"processModel\" -Value @{ identitytype = \"SpecificUser\"; username = $username; password = $password }\n    }\n  }\n  else {\n    Write-Host \"Setting application pool identity to: $identityType\"\n    Invoke-IisWithRetry \"set application pool identity on '$poolName'\" {\n      Set-ItemProperty $poolPath -Name \"processModel\" -Value @{ identitytype = $identityType }\n    }\n  }\n}\n\nfunction Set-IisWebSite ($siteName, $physicalPath, $poolName, $bindings) {\n  $sitePath = \"IIS:\\Sites\\$siteName\"\n\n  if (-not (Test-Path $sitePath)) {\n    # A site cannot be created without at least one binding, so the first one is applied up front.\n    $firstBinding = $bindings[0]\n    Write-Host \"Creating website '$siteName' with initial binding $($firstBinding.Protocol) $($firstBinding.BindingInformation)\"\n\n    Invoke-IisWithRetry \"create website '$siteName'\" {\n      New-Item $sitePath -Type Site -Bindings @{ protocol = $firstBinding.Protocol; bindingInformation = $firstBinding.BindingInformation } | Out-Null\n    }\n  }\n  else {\n    Write-Host \"Website already exists - updating: $siteName\"\n  }\n\n  Invoke-IisWithRetry \"set website properties on '$siteName'\" {\n    Set-ItemProperty $sitePath -Name \"physicalPath\" -Value $physicalPath\n    Set-ItemProperty $sitePath -Name \"applicationPool\" -Value $poolName\n  }\n\n  Write-Host \"Website physical path: $physicalPath, application pool: $poolName\"\n}\n\nfunction Set-IisBindings ($siteName, $bindings, $removeOtherBindings) {\n  foreach ($binding in $bindings) {\n    $existing = @(Get-WebBinding -Name $siteName |\n        Where-Object { $_.protocol -eq $binding.Protocol -and $_.bindingInformation -eq $binding.BindingInformation })\n\n    if ($existing.Count -eq 0) {\n      Write-Host \"Adding binding: $($binding.Protocol) $($binding.BindingInformation)$(if ($binding.Sni) { ' (sni)' })\"\n\n      Invoke-IisWithRetry \"add binding '$($binding.Protocol) $($binding.BindingInformation)'\" {\n        if ($binding.Sni) {\n          New-WebBinding -Name $siteName -Protocol $binding.Protocol -IPAddress $binding.IPAddress -Port $binding.Port -HostHeader $binding.HostHeader -SslFlags 1\n        }\n        else {\n          New-WebBinding -Name $siteName -Protocol $binding.Protocol -IPAddress $binding.IPAddress -Port $binding.Port -HostHeader $binding.HostHeader\n        }\n      }\n    }\n    else {\n      Write-Host \"Binding already present: $($binding.Protocol) $($binding.BindingInformation)\"\n    }\n\n    if ($binding.Protocol -eq \"https\") {\n      # Always re-apply the certificate so a rotated thumbprint takes effect on redeployment.\n      Write-Host \"Binding certificate $($binding.Thumbprint) to $($binding.BindingInformation)\"\n\n      Invoke-IisWithRetry \"bind certificate to '$($binding.BindingInformation)'\" {\n        $certificate = Get-Item \"Cert:\\LocalMachine\\My\\$($binding.Thumbprint)\" -ErrorAction SilentlyContinue\n        if ($null -eq $certificate) {\n          throw \"Certificate with thumbprint $($binding.Thumbprint) was not found in the LocalMachine\\My store of this machine\"\n        }\n\n        $webBinding = Get-WebBinding -Name $siteName -Protocol \"https\" |\n          Where-Object { $_.bindingInformation -eq $binding.BindingInformation }\n\n        $webBinding.AddSslCertificate($binding.Thumbprint, \"My\")\n      }\n    }\n  }\n\n  if (-not $removeOtherBindings) {\n    return\n  }\n\n  $desired = @($bindings | ForEach-Object { \"$($_.Protocol)|$($_.BindingInformation)\" })\n\n  foreach ($existing in @(Get-WebBinding -Name $siteName)) {\n    $key = \"$($existing.protocol)|$($existing.bindingInformation)\"\n    if ($desired -contains $key) {\n      continue\n    }\n\n    Write-Host \"Removing binding that is not listed in the step: $($existing.protocol) $($existing.bindingInformation)\"\n    $parts = $existing.bindingInformation -split ':'\n\n    Invoke-IisWithRetry \"remove binding '$($existing.bindingInformation)'\" {\n      Remove-WebBinding -Name $siteName -Protocol $existing.protocol -IPAddress $parts[0] -Port $parts[1] -HostHeader $parts[2]\n    }\n  }\n}\n\nfunction Set-IisAuthentication ($siteName, $authenticationName, $setting) {\n  if ($setting -eq \"Unchanged\") {\n    Write-Host \"Leaving $authenticationName unchanged\"\n    return\n  }\n\n  $enabled = ($setting -eq \"Enabled\")\n  Write-Host \"Setting $authenticationName to: $setting\"\n\n  try {\n    Invoke-IisWithRetry \"set $authenticationName on '$siteName'\" {\n      Set-WebConfigurationProperty `\n        -Filter \"/system.webServer/security/authentication/$authenticationName\" `\n        -Name \"enabled\" `\n        -Value $enabled `\n        -PSPath \"IIS:\\\" `\n        -Location $siteName\n    }\n  }\n  catch {\n    throw \"Could not set $authenticationName on website '$siteName': $($_.Exception.Message). This usually means the matching IIS role feature is not installed, or the configuration section is locked at server level. Install the feature (e.g. 'Install-WindowsFeature Web-Windows-Auth') and make sure the section is unlocked.\"\n  }\n}\n\nfunction Set-IisState ($siteName, $poolName, $state) {\n  if ($state -eq \"Unchanged\") {\n    Write-Host \"Leaving application pool and website state unchanged\"\n    return\n  }\n\n  if ($state -eq \"Started\") {\n    Invoke-IisWithRetry \"start application pool '$poolName'\" {\n      if ((Get-WebAppPoolState -Name $poolName).Value -ne \"Started\") {\n        Start-WebAppPool -Name $poolName\n      }\n    }\n    Write-Host \"Application pool started: $poolName\"\n\n    Invoke-IisWithRetry \"start website '$siteName'\" {\n      if ((Get-WebsiteState -Name $siteName).Value -ne \"Started\") {\n        Start-Website -Name $siteName\n      }\n    }\n    Write-Host \"Website started: $siteName\"\n  }\n  else {\n    Invoke-IisWithRetry \"stop website '$siteName'\" {\n      if ((Get-WebsiteState -Name $siteName).Value -ne \"Stopped\") {\n        Stop-Website -Name $siteName\n      }\n    }\n    Write-Host \"Website stopped: $siteName\"\n\n    Invoke-IisWithRetry \"stop application pool '$poolName'\" {\n      if ((Get-WebAppPoolState -Name $poolName).Value -ne \"Stopped\") {\n        Stop-WebAppPool -Name $poolName\n      }\n    }\n    Write-Host \"Application pool stopped: $poolName\"\n  }\n}\n\n# --- step parameters ---\n\n$siteName = Get-JawsText \"STEP.Website.WebSiteName\"\n$physicalPath = Get-JawsText \"STEP.Website.PhysicalPath\"\n$bindingLines = Get-JawsText \"STEP.Website.Bindings\"\n$removeOtherBindings = Get-JawsBool \"STEP.Website.RemoveOtherBindings\"\n\n$poolName = Get-JawsText \"STEP.ApplicationPool.ApplicationPoolName\"\n$frameworkVersion = Get-JawsText \"STEP.ApplicationPool.FrameworkVersion\" \"v4.0\"\n$pipelineMode = Get-JawsText \"STEP.ApplicationPool.PipelineMode\" \"Integrated\"\n$enable32Bit = Get-JawsBool \"STEP.ApplicationPool.Enable32BitAppOnWin64\"\n$identityType = Get-JawsText \"STEP.ApplicationPool.IdentityType\" \"ApplicationPoolIdentity\"\n$username = Get-JawsText \"STEP.ApplicationPool.UserAccountName\"\n$password = Get-JawsText \"STEP.ApplicationPool.UserAccountPassword\"\n\n$anonymousAuthentication = Get-JawsText \"STEP.Authentication.AnonymousAuthentication\" \"Unchanged\"\n$windowsAuthentication = Get-JawsText \"STEP.Authentication.WindowsAuthentication\" \"Unchanged\"\n$basicAuthentication = Get-JawsText \"STEP.Authentication.BasicAuthentication\" \"Unchanged\"\n\n$stateAfterDeployment = Get-JawsText \"STEP.Options.StateAfterDeployment\" \"Started\"\n$script:maxRetries = Get-JawsInt \"STEP.Options.MaxRetries\" 5\n\n# --- validation ---\n\nif ([string]::IsNullOrWhiteSpace($siteName)) {\n  throw \"This deployment step is missing value for 'STEP.Website.WebSiteName'\"\n}\n\nif ([string]::IsNullOrWhiteSpace($physicalPath)) {\n  throw \"This deployment step is missing value for 'STEP.Website.PhysicalPath'\"\n}\n\nif ([string]::IsNullOrWhiteSpace($poolName)) {\n  throw \"This deployment step is missing value for 'STEP.ApplicationPool.ApplicationPoolName'\"\n}\n\n$bindings = @()\nforeach ($line in @($bindingLines -split \"`n\")) {\n  if (-not [string]::IsNullOrWhiteSpace($line)) {\n    $bindings += ConvertTo-IisBinding $line.Trim()\n  }\n}\n\nif ($bindings.Count -eq 0) {\n  throw \"This deployment step is missing value for 'STEP.Website.Bindings' - at least one binding is required, e.g. 'http *:80:'\"\n}\n\n# --- deployment ---\n\nWrite-Host \"Deploying IIS website '$siteName' from $physicalPath\"\n\nAssert-IisAvailable\n\nif (-not (Test-Path $physicalPath)) {\n  Write-Host \"Physical path is missing - creating $physicalPath\"\n  New-Item $physicalPath -ItemType Directory | Out-Null\n}\n\n# IIS serialises poorly under concurrent deployments: two agents writing applicationHost.config\n# at the same time corrupt each other. A machine-wide mutex keeps IIS changes one at a time.\n$mutex = New-Object System.Threading.Mutex($false, \"Global\\JawsDeploy-IIS-Configuration-Mutex\")\n$mutexAcquired = $false\n\ntry {\n  try {\n    $mutexAcquired = $mutex.WaitOne([TimeSpan]::FromMinutes(5))\n  }\n  catch [System.Threading.AbandonedMutexException] {\n    # The previous holder died without releasing. We now own the mutex and IIS is ours to configure.\n    Write-Host \"Previous IIS configuration lock was abandoned - continuing\"\n    $mutexAcquired = $true\n  }\n\n  if (-not $mutexAcquired) {\n    throw \"Timed out after 5 minutes waiting for another deployment to finish configuring IIS on this machine\"\n  }\n\n  Set-IisApplicationPool $poolName $frameworkVersion $pipelineMode $enable32Bit $identityType $username $password\n  Set-IisWebSite $siteName $physicalPath $poolName $bindings\n  Set-IisBindings $siteName $bindings $removeOtherBindings\n\n  Set-IisAuthentication $siteName \"anonymousAuthentication\" $anonymousAuthentication\n  Set-IisAuthentication $siteName \"windowsAuthentication\" $windowsAuthentication\n  Set-IisAuthentication $siteName \"basicAuthentication\" $basicAuthentication\n\n  Set-IisState $siteName $poolName $stateAfterDeployment\n}\nfinally {\n  if ($mutexAcquired) {\n    $mutex.ReleaseMutex()\n  }\n  $mutex.Dispose()\n}\n\nWrite-Host \"IIS website deployed: $siteName\"\n",
+  "ScriptLanguage": "powershell5"
+}

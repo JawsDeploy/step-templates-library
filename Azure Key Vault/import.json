@@ -1,7 +1,6 @@
 {
   "Name": "Azure Key Vault",
   "Description": "Get secrets from Azure Key Vault and store them in output variables",
-  "Version": 1,
   "SupportedRunModes": [
     "TargetMachine"
   ],

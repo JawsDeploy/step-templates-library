@@ -1,6 +1,5 @@
 {
   "Name": "Apply SSL cert from Windows cert store to IIS",
-  "Version": 1,
   "SupportedRunModes": [
     "TargetMachine"
   ],

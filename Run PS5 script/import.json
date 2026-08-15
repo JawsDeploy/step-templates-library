@@ -1,7 +1,6 @@
 {
   "Name": "Run PS5 script",
   "Description": "Run a PowerShell 5 (AKA Windows Powershell) script. Handy for IIS management.",
-  "Version": 1,
   "SupportedRunModes": [
     "TargetMachine"
   ],

@@ -1,7 +1,6 @@
 {
   "Name": "Azure Web App",
   "Description": "Deploys a specified package as an Azure Web App",
-  "Version": 1,
   "SupportedRunModes": [
     "WorkerToCloudTargets"
   ],

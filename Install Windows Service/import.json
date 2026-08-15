@@ -1,61 +1,92 @@
 {
   "Name": "Install Windows Service",
   "Description": "Install an executable as Windows Service",
-  "Version": 1,
   "SupportedRunModes": [
     "TargetMachine"
   ],
   "Properties": [
     {
-      "ControlType": "PropertyGroup",
       "Id": "ServiceInformation",
       "Name": "Service information",
+      "ControlType": "PropertyGroup",
+      "IsBound": false,
+      "ValueNumber": 0.0,
+      "ValueBoolean": false,
       "Properties": [
         {
-          "ControlType": "SingleLineText",
-          "Description": "How should the Windows Service be named (internal name)",
           "Id": "ServiceName",
-          "Name": "Service name"
+          "Name": "Service name",
+          "Description": "How should the Windows Service be named (internal name)",
+          "ControlType": "SingleLineText",
+          "IsBound": false,
+          "ValueNumber": 0.0,
+          "ValueBoolean": false,
+          "Properties": []
         },
         {
-          "ControlType": "SingleLineText",
-          "Description": "How should the Windows Service be named when displayed to end users. If not specified the 'Service name' will be used.",
           "Id": "DisplayName",
-          "Name": "Display name (optional)"
+          "Name": "Display name (optional)",
+          "Description": "How should the Windows Service be named when displayed to end users. If not specified the 'Service name' will be used.",
+          "ControlType": "SingleLineText",
+          "IsBound": false,
+          "ValueNumber": 0.0,
+          "ValueBoolean": false,
+          "Properties": []
         }
       ]
     },
     {
-      "ControlType": "PropertyGroup",
       "Id": "ServiceExecutable",
       "Name": "Service executable",
+      "ControlType": "PropertyGroup",
+      "IsBound": false,
+      "ValueNumber": 0.0,
+      "ValueBoolean": false,
       "Properties": [
         {
-          "ControlType": "SingleLineText",
-          "Description": "Path to the folder where executable is located",
           "Id": "InstallationDirectory",
-          "Name": "Installation directory"
+          "Name": "Installation directory",
+          "Description": "Path to the folder where executable is located",
+          "ControlType": "SingleLineText",
+          "IsBound": false,
+          "ValueNumber": 0.0,
+          "ValueBoolean": false,
+          "Properties": []
         },
         {
-          "ControlType": "SingleLineText",
-          "Description": "Filename or path to the service main executable file. When specifying a path - it should be relative to 'Installation directory'.",
           "Id": "ExecutablePath",
-          "Name": "Executable name/path"
+          "Name": "Executable name/path",
+          "Description": "Filename or path to the service main executable file. When specifying a path - it should be relative to 'Installation directory'.",
+          "ControlType": "SingleLineText",
+          "IsBound": false,
+          "ValueNumber": 0.0,
+          "ValueBoolean": false,
+          "Properties": []
         },
         {
-          "ControlType": "SingleLineText",
-          "Description": "The service will be started using provided set of arguments on the command line.",
           "Id": "ExecutableArguments",
-          "Name": "Executable arguments"
+          "Name": "Executable arguments",
+          "Description": "The service will be started using provided set of arguments on the command line.",
+          "ControlType": "SingleLineText",
+          "IsBound": false,
+          "ValueNumber": 0.0,
+          "ValueBoolean": false,
+          "Properties": []
         }
       ]
     },
     {
-      "ControlType": "PropertyGroup",
       "Id": "ServiceAccount",
       "Name": "Service account",
+      "ControlType": "PropertyGroup",
+      "IsBound": false,
+      "ValueNumber": 0.0,
+      "ValueBoolean": false,
       "Properties": [
         {
+          "Id": "AccountType",
+          "Name": "Account type",
+          "Description": "The service will run under this account type",
           "ControlType": "DropDownList",
           "ControlValues": [
             {
@@ -75,40 +106,55 @@
               "Value": "UserAccount"
             }
           ],
-          "Description": "The service will run under this account type",
-          "Id": "AccountType",
-          "Name": "Account type"
+          "IsBound": false,
+          "ValueNumber": 0.0,
+          "ValueBoolean": false,
+          "Properties": []
         },
         {
-          "ControlType": "SingleLineText",
-          "DependsOn": {
-            "ControlId": "ServiceAccount.AccountType",
-            "Operator": "Equals",
-            "Value": "UserAccount"
-          },
-          "Description": "Name of a specific Windows user account. Make sure this user has permission 'Log on as a service'.",
           "Id": "UserAccountName",
-          "Name": "User account name"
-        },
-        {
+          "Name": "User account name",
+          "Description": "Name of a specific Windows user account. Make sure this user has permission 'Log on as a service'.",
           "ControlType": "SingleLineText",
           "DependsOn": {
             "ControlId": "ServiceAccount.AccountType",
             "Operator": "Equals",
             "Value": "UserAccount"
           },
-          "Description": "Password for the specified Windows user account",
+          "IsBound": false,
+          "ValueNumber": 0.0,
+          "ValueBoolean": false,
+          "Properties": []
+        },
+        {
           "Id": "UserAccountPassword",
-          "Name": "Password"
+          "Name": "Password",
+          "Description": "Password for the specified Windows user account",
+          "ControlType": "SingleLineText",
+          "DependsOn": {
+            "ControlId": "ServiceAccount.AccountType",
+            "Operator": "Equals",
+            "Value": "UserAccount"
+          },
+          "IsBound": false,
+          "ValueNumber": 0.0,
+          "ValueBoolean": false,
+          "Properties": []
         }
       ]
     },
     {
-      "ControlType": "PropertyGroup",
       "Id": "ServiceStartup",
       "Name": "Service startup",
+      "ControlType": "PropertyGroup",
+      "IsBound": false,
+      "ValueNumber": 0.0,
+      "ValueBoolean": false,
       "Properties": [
         {
+          "Id": "StartMode",
+          "Name": "Start mode",
+          "Description": "What should be the start mode, applied after a system reboot.",
           "ControlType": "DropDownList",
           "ControlValues": [
             {
@@ -128,11 +174,15 @@
               "Value": "Manual"
             }
           ],
-          "Description": "What should be the start mode, applied after a system reboot.",
-          "Id": "StartMode",
-          "Name": "Start mode"
+          "IsBound": false,
+          "ValueNumber": 0.0,
+          "ValueBoolean": false,
+          "Properties": []
         },
         {
+          "Id": "StateAfterInstallation",
+          "Name": "State after installation",
+          "Description": "What should be the initial service state after installation.",
           "ControlType": "DropDownList",
           "ControlValues": [
             {
@@ -144,13 +194,14 @@
               "Value": "Stopped"
             }
           ],
-          "Description": "What should be the initial service state after installation.",
-          "Id": "StateAfterInstallation",
-          "Name": "State after installation"
+          "IsBound": false,
+          "ValueNumber": 0.0,
+          "ValueBoolean": false,
+          "Properties": []
         }
       ]
     }
   ],
-  "Script": "function InstallService ($serviceName, $displayName, $folder, $executable, $arguments, $accountType, $login, $password, $startUpType, $stateAfterInstallation) {\r\n  Write-Host \"Installing service: $serviceName\"\r\n\r\n  $binaryPath = Join-Path $folder $executable\r\n\r\n  if ((Test-Path $binaryPath) -eq $false) {\r\n    throw \"BinaryPath to service not found: $binaryPath\"\r\n  }\r\n\r\n  if ((\"Automatic\", \"AutomaticDelayedStart\", \"Manual\", \"Disabled\") -notcontains $startUpType) {\r\n    throw \"Value for startUpType parameter should be (Automatic, AutomaticDelayedStart, Manual or Disabled) and it was $startUpType\"\r\n  }\r\n\r\n  $binaryPathWithArgs = $binaryPath\r\n  if ($arguments) {\r\n    $binaryPathWithArgs = \"`\"$binaryPath`\" $arguments\"\r\n  }\r\n\r\n  $existingService = Get-Service $serviceName -ErrorAction SilentlyContinue\r\n  if ($existingService) {\r\n    Write-Host \"Service $serviceName already exists - stopping and removing\"\r\n    $existingService | Stop-Service -Force\r\n    $existingService | Remove-Service\r\n  }\r\n\r\n  if (!$password) {\r\n    $secpasswd = (new-object System.Security.SecureString)\r\n  }\r\n  else {\r\n    $secpasswd = ConvertTo-SecureString $password -AsPlainText -Force\r\n  }\r\n\r\n  if ($accountType -eq \"LocalSystem\") {\r\n    $login = \"LocalSystem\"\r\n  }\r\n  elseif ($accountType -eq \"LocalService\") {\r\n    $login = \"NT AUTHORITY\\\\LOCAL SERVICE\"\r\n  }\r\n  elseif ($accountType -eq \"NetworkService\") {\r\n    $login = \"NT AUTHORITY\\\r\nETWORK SERVICE\"\r\n  }\r\n  $serviceCredential = New-Object System.Management.Automation.PSCredential ($login, $secpasswd)\r\n\r\n  if (!$displayName) {\r\n    $displayName = $serviceName\r\n  }\r\n  New-Service -name $serviceName -binaryPathName $binaryPathWithArgs -displayName $displayName -startupType $startUpType -credential $serviceCredential\r\n\r\n  Write-Host \"Installation completed: $serviceName\"\r\n\r\n  if ($stateAfterInstallation -eq \"Started\") {\r\n    Write-Host \"Starting service: $serviceName\"\r\n    Start-Service -Name $serviceName\r\n    Write-Host \"Service started: $serviceName\"\r\n  }\r\n}\r\n\r\n$serviceName = $Jaws.Parameters[\"STEP.ServiceInformation.ServiceName\"].Value\r\n$serviceDisplayName = $Jaws.Parameters[\"STEP.ServiceInformation.DisplayName\"].Value\r\n$serviceDir = $Jaws.Parameters[\"STEP.ServiceExecutable.InstallationDirectory\"].Value\r\n$binaryName = $Jaws.Parameters[\"STEP.ServiceExecutable.ExecutablePath\"].Value\r\n$arguments = $Jaws.Parameters[\"STEP.ServiceExecutable.ExecutableArguments\"].Value\r\n$accountType = $Jaws.Parameters[\"STEP.ServiceAccount.AccountType\"].Value\r\n$username = $Jaws.Parameters[\"STEP.ServiceAccount.UserAccountName\"].Value\r\n$password = $Jaws.Parameters[\"STEP.ServiceAccount.UserAccountPassword\"].Value\r\n$startMode = $Jaws.Parameters[\"STEP.ServiceStartup.StartMode\"].Value\r\n$stateAfterInstallation = $Jaws.Parameters[\"STEP.ServiceStartup.StateAfterInstallation\"].Value\r\n\r\nInstallService $serviceName $serviceDisplayName $serviceDir $binaryName $arguments $accountType $username $password $startMode $stateAfterInstallation",
+  "Script": "function InstallService ($serviceName, $displayName, $folder, $executable, $arguments, $accountType, $login, $password, $startUpType, $stateAfterInstallation) {\r\n  Write-Host \"Installing service: $serviceName\"\r\n\r\n  $binaryPath = Join-Path $folder $executable\r\n\r\n  if ((Test-Path $binaryPath) -eq $false) {\r\n    throw \"BinaryPath to service not found: $binaryPath\"\r\n  }\r\n\r\n  if ((\"Automatic\", \"AutomaticDelayedStart\", \"Manual\", \"Disabled\") -notcontains $startUpType) {\r\n    throw \"Value for startUpType parameter should be (Automatic, AutomaticDelayedStart, Manual or Disabled) and it was $startUpType\"\r\n  }\r\n\r\n  $binaryPathWithArgs = \"`\"$binaryPath`\"\"\r\n  if ($arguments) {\r\n    $binaryPathWithArgs += \" $arguments\"\r\n  }\r\n\r\n  $existingService = Get-Service $serviceName -ErrorAction SilentlyContinue\r\n  if ($existingService) {\r\n    Write-Host \"Service $serviceName already exists - stopping and removing\"\r\n    $existingService | Stop-Service -Force\r\n    $existingService | Remove-Service\r\n  }\r\n\r\n  if (!$password) {\r\n    $secpasswd = (new-object System.Security.SecureString)\r\n  }\r\n  else {\r\n    $secpasswd = ConvertTo-SecureString $password -AsPlainText -Force\r\n  }\r\n\r\n  if ($accountType -eq \"LocalSystem\") {\r\n    $login = \"LocalSystem\"\r\n  }\r\n  elseif ($accountType -eq \"LocalService\") {\r\n    $login = \"NT AUTHORITY\\LOCAL SERVICE\"\r\n  }\r\n  elseif ($accountType -eq \"NetworkService\") {\r\n    $login = \"NT AUTHORITY\\NETWORK SERVICE\"\r\n  }\r\n  $serviceCredential = New-Object System.Management.Automation.PSCredential ($login, $secpasswd)\r\n\r\n  if (!$displayName) {\r\n    $displayName = $serviceName\r\n  }\r\n  New-Service -name $serviceName -binaryPathName $binaryPathWithArgs -displayName $displayName -startupType $startUpType -credential $serviceCredential\r\n\r\n  Write-Host \"Installation completed: $serviceName\"\r\n\r\n  if ($stateAfterInstallation -eq \"Started\") {\r\n    Write-Host \"Starting service: $serviceName\"\r\n    Start-Service -Name $serviceName\r\n    Write-Host \"Service started: $serviceName\"\r\n  }\r\n}\r\n\r\n$serviceName = $Jaws.Parameters[\"STEP.ServiceInformation.ServiceName\"].Value\r\n$serviceDisplayName = $Jaws.Parameters[\"STEP.ServiceInformation.DisplayName\"].Value\r\n$serviceDir = $Jaws.Parameters[\"STEP.ServiceExecutable.InstallationDirectory\"].Value\r\n$binaryName = $Jaws.Parameters[\"STEP.ServiceExecutable.ExecutablePath\"].Value\r\n$arguments = $Jaws.Parameters[\"STEP.ServiceExecutable.ExecutableArguments\"].Value\r\n$accountType = $Jaws.Parameters[\"STEP.ServiceAccount.AccountType\"].Value\r\n$username = $Jaws.Parameters[\"STEP.ServiceAccount.UserAccountName\"].Value\r\n$password = $Jaws.Parameters[\"STEP.ServiceAccount.UserAccountPassword\"].Value\r\n$startMode = $Jaws.Parameters[\"STEP.ServiceStartup.StartMode\"].Value\r\n$stateAfterInstallation = $Jaws.Parameters[\"STEP.ServiceStartup.StateAfterInstallation\"].Value\r\n\r\nInstallService $serviceName $serviceDisplayName $serviceDir $binaryName $arguments $accountType $username $password $startMode $stateAfterInstallation",
   "ScriptLanguage": "powershell"
 }
