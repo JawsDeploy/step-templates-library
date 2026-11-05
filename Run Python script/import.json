@@ -8,7 +8,6 @@
     {
       "Id": "ScriptBody",
       "Name": "Script body",
-      "DefaultValue": "",
       "ControlType": "ScriptEditor",
       "ControlTypeOptions": {
         "Language": "python"

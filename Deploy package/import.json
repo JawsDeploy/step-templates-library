@@ -66,7 +66,6 @@
         {
           "Id": "AfterPackageExtracted",
           "Name": "After package is extracted",
-          "DefaultValue": "# write some code here...",
           "ControlType": "ScriptEditor",
           "ControlTypeOptions": {
             "Language": "powershell"
@@ -75,7 +74,6 @@
         {
           "Id": "AfterConfigTransformed",
           "Name": "After config transform is applied",
-          "DefaultValue": "# write some code here...",
           "ControlType": "ScriptEditor",
           "ControlTypeOptions": {
             "Language": "powershell"
@@ -84,7 +82,6 @@
         {
           "Id": "AfterVariablesReplaced",
           "Name": "After variables are replaced in files",
-          "DefaultValue": "# write some code here...",
           "ControlType": "ScriptEditor",
           "ControlTypeOptions": {
             "Language": "powershell"
@@ -93,7 +90,6 @@
         {
           "Id": "AfterPackageDeployed",
           "Name": "After package is deployed",
-          "DefaultValue": "# write some code here...",
           "ControlType": "ScriptEditor",
           "ControlTypeOptions": {
             "Language": "powershell"

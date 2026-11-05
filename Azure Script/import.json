@@ -18,7 +18,6 @@
       "Id": "ScriptBody",
       "Name": "Script body",
       "Description": "Specify your PowerShell script to be executed in the context of selected Azure Account.",
-      "DefaultValue": "",
       "ControlType": "ScriptEditor",
       "ControlTypeOptions": {
         "Language": "powershell"
